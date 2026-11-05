@@ -12,7 +12,7 @@ Canadian provinces and territories, and estimates daily population exposure to p
 | CWFIS hotspots (WFS) | Natural Resources Canada | Satellite-detected fire hotspots | Daily |
 | CWFIS fire perimeters | Natural Resources Canada | Active fire perimeters | Daily |
 | MSC GeoMet / Datamart | Environment and Climate Change Canada | AQHI observations and forecasts, weather | Hourly |
-| Census 2021 | Statistics Canada | Population and boundary files | Static |
+| Census 2021 | Statistics Canada | Census division and province boundaries, population (table 98-10-0007-01) | Static |
 
 ## Architecture (target)
 
@@ -38,13 +38,15 @@ smokewatch hotspots --start 2023-06-01 --end 2023-06-07 --sink s3   # backfill
 smokewatch aqhi observations --sink s3   # today's hourly AQHI
 smokewatch aqhi forecasts --sink s3      # merge current forecast window
 smokewatch weather --sink s3             # yesterday's hourly weather, all stations
+smokewatch statcan --sink s3             # 2021 Census boundaries + population (once)
+smokewatch load census                   # bronze -> PostGIS raw schema
 ```
 
 ## Roadmap
 
 - [x] Sprint 1 — Repo setup, local stack, CWFIS hotspot extractor to bronze
 - [x] Sprint 2 — AQHI and weather ingestion
-- [ ] Sprint 3 — Census boundaries and population in PostGIS
+- [x] Sprint 3 — Census boundaries and population in PostGIS
 - [ ] Sprint 4 — dbt models, spatial joins, SCD2 fire tracking
 - [ ] Sprint 5 — Orchestration and data quality
 - [ ] Sprint 6 — Historical backfill (2023 season)
