@@ -17,7 +17,7 @@ Canadian provinces and territories, and estimates daily population exposure to p
 ## Architecture (target)
 
 ```
-extractors (Python) ──► MinIO bronze (raw, partitioned by source/date)
+extractors (Python) ──► S3 bronze (SeaweedFS) (raw, partitioned by source/date)
                               │
                               ▼
                     Postgres + PostGIS ──► dbt silver / gold ──► FastAPI + map dashboard
@@ -29,7 +29,7 @@ extractors (Python) ──► MinIO bronze (raw, partitioned by source/date)
 
 ```bash
 cp .env.example .env            # then edit the passwords
-docker compose up -d            # Postgres+PostGIS on :5433, MinIO on :9000 (console :9001)
+docker compose up -d            # Postgres+PostGIS on :5433, SeaweedFS S3 on :8333 (filer UI :8888)
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ```

@@ -1,4 +1,4 @@
-"""Bronze-layer storage: one interface, two backends (local disk for tests/dev, MinIO/S3)."""
+"""Bronze-layer storage: one interface, two backends (local disk for tests/dev, S3)."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ class LocalStore:
 
 
 class S3Store:
-    """MinIO (or any S3-compatible) bucket."""
+    """Any S3-compatible bucket (SeaweedFS locally; AWS S3 or similar in the cloud)."""
 
     def __init__(self, bucket: str | None = None) -> None:
         import boto3
@@ -48,11 +48,20 @@ class S3Store:
         self.bucket = bucket or settings.bronze_bucket
         self.client = boto3.client(
             "s3",
-            endpoint_url=settings.minio_endpoint,
-            aws_access_key_id=settings.minio_user,
-            aws_secret_access_key=settings.minio_password,
+            endpoint_url=settings.s3_endpoint,
+            aws_access_key_id=settings.s3_access_key,
+            aws_secret_access_key=settings.s3_secret_key,
             region_name="us-east-1",
         )
+        self._ensure_bucket()
+
+    def _ensure_bucket(self) -> None:
+        from botocore.exceptions import ClientError
+
+        try:
+            self.client.head_bucket(Bucket=self.bucket)
+        except ClientError:
+            self.client.create_bucket(Bucket=self.bucket)
 
     def put(self, key: str, data: bytes, content_type: str = "application/octet-stream") -> str:
         self.client.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
