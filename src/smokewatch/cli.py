@@ -6,7 +6,7 @@ import argparse
 import logging
 from datetime import date
 
-from smokewatch.extractors import cwfis_hotspots, eccc_aqhi, eccc_climate
+from smokewatch.extractors import cwfis_hotspots, eccc_aqhi, eccc_climate, statcan
 from smokewatch.storage import get_store
 
 
@@ -27,10 +27,14 @@ def main(argv: list[str] | None = None) -> None:
     aq.add_argument("kind", choices=["observations", "forecasts"])
     _add_dates(aq)
     _add_dates(sub.add_parser("weather", help="ECCC hourly climate observations -> bronze"))
+    sc = sub.add_parser("statcan", help="StatCan 2021 Census boundaries and population -> bronze")
+    sc.add_argument("--sink", choices=["local", "s3"], default="s3")
+    sc.add_argument("--only", nargs="+", choices=list(statcan.FILES), help="subset of files")
+    sc.add_argument("--force", action="store_true", help="re-download files already in bronze")
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    if bool(args.start) != bool(args.end):
+    if bool(getattr(args, "start", None)) != bool(getattr(args, "end", None)):
         parser.error("--start and --end must be used together")
     store = get_store(args.sink)
 
@@ -55,6 +59,11 @@ def main(argv: list[str] | None = None) -> None:
         else:
             r = eccc_aqhi.observations(store, args.date)
             print(f"{r.feature_count} observations -> {r.data_key}")
+
+    elif args.command == "statcan":
+        for r in statcan.fetch(store, args.only, force=args.force):
+            status = "skipped (exists)" if r.skipped else f"{r.bytes / 1e6:.1f} MB"
+            print(f"{r.name}: {status} -> {r.key}")
 
     elif args.command == "weather":
         if args.start:
