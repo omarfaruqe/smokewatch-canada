@@ -32,11 +32,14 @@ cp .env.example .env            # then edit the passwords
 docker compose up -d            # Postgres+PostGIS on :5433, SeaweedFS S3 on :8333 (filer UI :8888)
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
+pytest -q                       # offline tests
+smokewatch hotspots --sink s3   # last 24 h of hotspots -> bronze
+smokewatch hotspots --start 2023-06-01 --end 2023-06-07 --sink s3   # backfill
 ```
 
 ## Roadmap
 
-- [ ] Sprint 1 — Repo setup, local stack, CWFIS hotspot extractor to bronze
+- [x] Sprint 1 — Repo setup, local stack, CWFIS hotspot extractor to bronze
 - [ ] Sprint 2 — AQHI and weather ingestion
 - [ ] Sprint 3 — Census boundaries and population in PostGIS
 - [ ] Sprint 4 — dbt models, spatial joins, SCD2 fire tracking
