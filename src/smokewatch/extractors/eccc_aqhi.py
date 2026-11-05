@@ -3,13 +3,18 @@
 Bronze layout:
     eccc/aqhi-observations-realtime/date=YYYY-MM-DD/{items.geojson,_manifest.json}
         one object per UTC day of hourly observations (re-run overwrites)
-    eccc/aqhi-forecasts-realtime/date=YYYY-MM-DD/hour=HH/{items.geojson,_manifest.json}
-        snapshot of the current forecasts, one per fetch hour (forecasts are re-issued
-        through the day, so each snapshot is kept)
+    eccc/aqhi-forecasts-realtime/pub_date=YYYY-MM-DD/{items.geojson,_manifest.json}
+        forecasts grouped by publication date. The API serves a rolling ~3-day window of
+        publications, so each run merges into the existing partition by feature id
+        (new wins). Re-runs are idempotent and rows that aged out of the window are kept.
+
+Observations get late amendments, so the daily job should also re-pull yesterday.
 """
 
 from __future__ import annotations
 
+import json
+from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 
 import requests
@@ -37,18 +42,35 @@ def observations(
     )
 
 
+def _merge_by_id(existing: list[dict], new: list[dict]) -> list[dict]:
+    merged = {f.get("id") or f["properties"]["id"]: f for f in existing}
+    merged.update({f.get("id") or f["properties"]["id"]: f for f in new})
+    return sorted(merged.values(), key=lambda f: f.get("id") or f["properties"]["id"])
+
+
 def forecasts(
-    store: BronzeStore, now: datetime | None = None, session: requests.Session | None = None
-) -> PartitionResult:
-    now = now or datetime.now(timezone.utc)
+    store: BronzeStore, session: requests.Session | None = None
+) -> list[PartitionResult]:
+    """Fetch the forecast window and merge it into per-publication-date partitions."""
     features = fetch_items(FCST, session=session)
-    return write_feature_partition(
-        store,
-        f"eccc/{FCST}/date={now.date().isoformat()}/hour={now.hour:02d}",
-        features,
-        {"source": "ECCC MSC GeoMet", "endpoint": items_url(FCST),
-         "snapshot_utc": now.isoformat(timespec="seconds")},
-    )
+    by_day: dict[str, list[dict]] = defaultdict(list)
+    for f in features:
+        by_day[f["properties"]["publication_datetime"][:10]].append(f)
+
+    results = []
+    for day, feats in sorted(by_day.items()):
+        prefix = f"eccc/{FCST}/pub_date={day}"
+        data_key = f"{prefix}/items.geojson"
+        if store.exists(data_key):
+            feats = _merge_by_id(json.loads(store.get(data_key))["features"], feats)
+        results.append(
+            write_feature_partition(
+                store, prefix, feats,
+                {"source": "ECCC MSC GeoMet", "endpoint": items_url(FCST),
+                 "partition_pub_date": day, "merge_key": "id"},
+            )
+        )
+    return results
 
 
 def observations_range(

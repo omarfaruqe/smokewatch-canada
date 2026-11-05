@@ -43,8 +43,9 @@ def main(argv: list[str] | None = None) -> None:
 
     elif args.command == "aqhi":
         if args.kind == "forecasts":
-            r = eccc_aqhi.forecasts(store)
-            print(f"{r.feature_count} forecast features -> {r.data_key}")
+            rs = eccc_aqhi.forecasts(store)
+            for r in rs:
+                print(f"{r.feature_count} forecast features -> {r.data_key}")
         elif args.start:
             rs = eccc_aqhi.observations_range(
                 store, args.start, args.end, skip_existing=not args.force
