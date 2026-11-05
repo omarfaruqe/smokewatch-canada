@@ -33,8 +33,10 @@ def main(argv: list[str] | None = None) -> None:
     sc.add_argument("--force", action="store_true", help="re-download files already in bronze")
 
     ld = sub.add_parser("load", help="load bronze data into Postgres raw schema")
-    ld.add_argument("dataset", choices=["census"])
+    ld.add_argument("dataset", choices=["census", "features"],
+                    help="census = StatCan reference data; features = hotspots, AQHI, weather")
     ld.add_argument("--sink", choices=["local", "s3"], default="s3", help="bronze to read from")
+    ld.add_argument("--force", action="store_true", help="reload partitions even if unchanged")
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -70,10 +72,17 @@ def main(argv: list[str] | None = None) -> None:
             print(f"{r.name}: {status} -> {r.key}")
 
     elif args.command == "load":
-        from smokewatch.loaders import statcan_census
+        if args.dataset == "census":
+            from smokewatch.loaders import statcan_census
 
-        for name, n in statcan_census.load(store).items():
-            print(f"{name}: {n} rows")
+            for name, n in statcan_census.load(store).items():
+                print(f"{name}: {n} rows")
+        else:
+            from smokewatch.loaders import bronze_features
+
+            for name, st in bronze_features.load_all(store, force=args.force).items():
+                print(f"{name}: {st['loaded']} partition(s) loaded, {st['skipped']} unchanged, "
+                      f"{st['rows']} rows")
 
     elif args.command == "weather":
         if args.start:

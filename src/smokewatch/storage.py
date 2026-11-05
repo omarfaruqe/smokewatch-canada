@@ -13,6 +13,7 @@ class BronzeStore(Protocol):
     def put(self, key: str, data: bytes, content_type: str = "application/octet-stream") -> str: ...
     def exists(self, key: str) -> bool: ...
     def get(self, key: str) -> bytes: ...
+    def list(self, prefix: str) -> list[str]: ...
 
 
 class LocalStore:
@@ -37,6 +38,14 @@ class LocalStore:
 
     def get(self, key: str) -> bytes:
         return self._path(key).read_bytes()
+
+    def list(self, prefix: str) -> list[str]:
+        base = self._path(prefix)
+        if not base.exists():
+            return []
+        return sorted(
+            p.relative_to(self.root).as_posix() for p in base.rglob("*") if p.is_file()
+        )
 
 
 class S3Store:
@@ -78,6 +87,14 @@ class S3Store:
 
     def get(self, key: str) -> bytes:
         return self.client.get_object(Bucket=self.bucket, Key=key)["Body"].read()
+
+    def list(self, prefix: str) -> list[str]:
+        keys: list[str] = []
+        for page in self.client.get_paginator("list_objects_v2").paginate(
+            Bucket=self.bucket, Prefix=prefix
+        ):
+            keys.extend(obj["Key"] for obj in page.get("Contents", []))
+        return sorted(keys)
 
 
 def get_store(sink: str) -> BronzeStore:
