@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgis/postgis:16-3.4
+    platform: linux/amd64   # no official arm64 build; runs under emulation on Apple Silicon
     container_name: smokewatch-postgres
     restart: unless-stopped
     environment:
@@ -19,7 +20,7 @@ services:
 
   # S3-compatible object storage for the bronze layer
   seaweedfs:
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:4.50
     container_name: smokewatch-seaweedfs
     restart: unless-stopped
     environment:
