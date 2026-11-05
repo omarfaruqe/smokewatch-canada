@@ -6,7 +6,7 @@ import argparse
 import logging
 from datetime import date
 
-from smokewatch.extractors import cwfis_hotspots, eccc_aqhi
+from smokewatch.extractors import cwfis_hotspots, eccc_aqhi, eccc_climate
 from smokewatch.storage import get_store
 
 
@@ -26,6 +26,7 @@ def main(argv: list[str] | None = None) -> None:
     aq = sub.add_parser("aqhi", help="ECCC AQHI observations or forecasts -> bronze")
     aq.add_argument("kind", choices=["observations", "forecasts"])
     _add_dates(aq)
+    _add_dates(sub.add_parser("weather", help="ECCC hourly climate observations -> bronze"))
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -54,6 +55,16 @@ def main(argv: list[str] | None = None) -> None:
         else:
             r = eccc_aqhi.observations(store, args.date)
             print(f"{r.feature_count} observations -> {r.data_key}")
+
+    elif args.command == "weather":
+        if args.start:
+            rs = eccc_climate.hourly_range(
+                store, args.start, args.end, skip_existing=not args.force
+            )
+            print(f"done: {len(rs)} day(s), {sum(r.feature_count for r in rs)} hourly records")
+        else:
+            r = eccc_climate.hourly(store, args.date)
+            print(f"{r.feature_count} hourly records -> {r.data_key}")
 
 
 if __name__ == "__main__":
