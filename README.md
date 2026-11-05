@@ -35,12 +35,15 @@ pip install -e ".[dev]"
 pytest -q                       # offline tests
 smokewatch hotspots --sink s3   # last 24 h of hotspots -> bronze
 smokewatch hotspots --start 2023-06-01 --end 2023-06-07 --sink s3   # backfill
+smokewatch aqhi observations --sink s3   # today's hourly AQHI
+smokewatch aqhi forecasts --sink s3      # merge current forecast window
+smokewatch weather --sink s3             # yesterday's hourly weather, all stations
 ```
 
 ## Roadmap
 
 - [x] Sprint 1 — Repo setup, local stack, CWFIS hotspot extractor to bronze
-- [ ] Sprint 2 — AQHI and weather ingestion
+- [x] Sprint 2 — AQHI and weather ingestion
 - [ ] Sprint 3 — Census boundaries and population in PostGIS
 - [ ] Sprint 4 — dbt models, spatial joins, SCD2 fire tracking
 - [ ] Sprint 5 — Orchestration and data quality
