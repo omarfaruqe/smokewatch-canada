@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Env / secrets
+.env
+
+# Local data (bronze copies, scratch)
+data/*
+!data/.gitkeep
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/

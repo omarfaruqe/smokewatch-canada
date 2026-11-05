@@ -1,0 +1,51 @@
+# SmokeWatch Canada
+
+A national data engineering platform that tracks wildfires, smoke and air quality across all
+Canadian provinces and territories, and estimates daily population exposure to poor air.
+
+*Version française à venir.*
+
+## Data sources
+
+| Source | Publisher | Content | Cadence |
+|---|---|---|---|
+| CWFIS hotspots (WFS) | Natural Resources Canada | Satellite-detected fire hotspots | Daily |
+| CWFIS fire perimeters | Natural Resources Canada | Active fire perimeters | Daily |
+| MSC GeoMet / Datamart | Environment and Climate Change Canada | AQHI observations and forecasts, weather | Hourly |
+| Census 2021 | Statistics Canada | Population and boundary files | Static |
+
+## Architecture (target)
+
+```
+extractors (Python) ──► MinIO bronze (raw, partitioned by source/date)
+                              │
+                              ▼
+                    Postgres + PostGIS ──► dbt silver / gold ──► FastAPI + map dashboard
+                              ▲
+              orchestration (Dagster) · data quality (dbt tests / Soda)
+```
+
+## Quick start
+
+```bash
+cp .env.example .env            # then edit the passwords
+docker compose up -d            # Postgres+PostGIS on :5433, MinIO on :9000 (console :9001)
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+## Roadmap
+
+- [ ] Sprint 1 — Repo setup, local stack, CWFIS hotspot extractor to bronze
+- [ ] Sprint 2 — AQHI and weather ingestion
+- [ ] Sprint 3 — Census boundaries and population in PostGIS
+- [ ] Sprint 4 — dbt models, spatial joins, SCD2 fire tracking
+- [ ] Sprint 5 — Orchestration and data quality
+- [ ] Sprint 6 — Historical backfill (2023 season)
+- [ ] Sprint 7 — API and map dashboard
+- [ ] Sprint 8 — CI/CD, docs, bilingual README
+
+## Licence and data attribution
+
+Code: MIT. Data: contains information licensed under the
+[Open Government Licence – Canada](https://open.canada.ca/en/open-government-licence-canada).
