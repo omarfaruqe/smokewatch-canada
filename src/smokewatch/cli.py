@@ -7,6 +7,7 @@ import logging
 from datetime import date
 
 from smokewatch.extractors import (
+    cwfis_archive,
     cwfis_hotspots,
     cwfis_perimeters,
     eccc_aqhi,
@@ -30,8 +31,11 @@ def main(argv: list[str] | None = None) -> None:
     sub = parser.add_subparsers(dest="command", required=True)
 
     _add_dates(sub.add_parser("hotspots", help="CWFIS fire hotspots -> bronze"))
-    pm = sub.add_parser("perimeters", help="snapshot CWFIS current fire perimeters -> bronze")
+    pm = sub.add_parser("perimeters", help="CWFIS fire perimeters -> bronze")
     pm.add_argument("--sink", choices=["local", "s3"], default="s3")
+    pm.add_argument("--season", type=int,
+                    help="download a past season's final perimeters from the archive instead")
+    pm.add_argument("--force", action="store_true")
     aq = sub.add_parser("aqhi", help="ECCC AQHI observations or forecasts -> bronze")
     aq.add_argument("kind", choices=["observations", "forecasts"])
     _add_dates(aq)
@@ -68,8 +72,13 @@ def main(argv: list[str] | None = None) -> None:
             print(f"{r.layer} {r.day}: {r.feature_count} hotspots -> {r.data_key}")
 
     elif args.command == "perimeters":
-        r = cwfis_perimeters.snapshot(store)
-        print(f"{r.feature_count} fire perimeters -> {r.data_key}")
+        if args.season:
+            key, size, skipped = cwfis_archive.fetch_season_perimeters(
+                store, args.season, force=args.force)
+            print(f"{'skipped (exists)' if skipped else f'{size / 1e6:.1f} MB'} -> {key}")
+        else:
+            r = cwfis_perimeters.snapshot(store)
+            print(f"{r.feature_count} fire perimeters -> {r.data_key}")
 
     elif args.command == "aqhi":
         if args.kind == "forecasts":
