@@ -36,6 +36,10 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.dagster]
+module_name = "smokewatch.orchestration.definitions"
+code_location_name = "smokewatch"
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
