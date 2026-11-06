@@ -134,6 +134,7 @@ function rangeDays(a, b) {
   return out;
 }
 
+// URLs are relative so the app works under a path prefix (e.g. /smokewatch/ behind Caddy).
 async function getJSON(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + " " + r.status); return r.json(); }
 
 const map = new maplibregl.Map({
@@ -177,13 +178,13 @@ map.on("load", async () => {
   toggle("lyrAqhi", ["cd-fill"]); toggle("lyrHot", ["hot-pts"]);
   document.getElementById("lyrPerim").addEventListener("change", async e => {
     if (e.target.checked && !perimLoaded) {
-      map.getSource("perim").setData(await getJSON("/geo/fires/season/2023"));
+      map.getSource("perim").setData(await getJSON("geo/fires/season/2023"));
       perimLoaded = true;
     }
     map.setLayoutProperty("perim-line", "visibility", e.target.checked ? "visible" : "none");
   });
 
-  const health = await getJSON("/health");
+  const health = await getJSON("health");
   const recentStart = iso(new Date(Date.parse(health.coverage.aqhi_to) - 13 * 864e5));
   const seasons = { "2023": ["2023-05-01", "2023-09-30"], recent: [recentStart, health.coverage.aqhi_to] };
   const sel = document.getElementById("season");
@@ -196,7 +197,7 @@ map.on("load", async () => {
 async function loadSeason(start, end, focus) {
   stop();
   days = rangeDays(start, end);
-  const daily = await getJSON(`/exposure/daily?start=${start}&end=${end}`);
+  const daily = await getJSON(`exposure/daily?start=${start}&end=${end}`);
   exposureByDay = Object.fromEntries(daily.map(d => [d.day, d]));
   const slider = document.getElementById("slider");
   slider.max = days.length - 1;
@@ -234,7 +235,7 @@ async function showDay(i, fetchMap = true) {
   if (chart) chart.draw();
   if (!fetchMap) return;
   const [cd, hot] = await Promise.all([
-    getJSON(`/geo/census-divisions?date=${day}`), getJSON(`/geo/hotspots?date=${day}&limit=20000`)]);
+    getJSON(`geo/census-divisions?date=${day}`), getJSON(`geo/hotspots?date=${day}&limit=20000`)]);
   if (ticket !== pending) return;  // a newer day was requested meanwhile
   map.getSource("cd").setData(cd); map.getSource("hot").setData(hot);
 }
