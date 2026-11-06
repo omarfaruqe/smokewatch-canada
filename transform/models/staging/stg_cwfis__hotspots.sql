@@ -3,6 +3,7 @@
     post_hook=[
         "create index if not exists {{ this.name }}_id_idx on {{ this }} (hotspot_id)",
         "create index if not exists {{ this.name }}_geom_idx on {{ this }} using gist (geom)",
+        "create index if not exists {{ this.name }}_geom3347_idx on {{ this }} using gist (geom_3347)",
     ]
 ) }}
 
@@ -51,6 +52,7 @@ select
     p ->> 'ecozone'                            as ecozone,
     (p ->> 'm3_confidence')::numeric           as confidence,
     geom,
+    ST_Transform(geom, 3347)::geometry(Point, 3347) as geom_3347,
     partition                                  as bronze_partition,
     loaded_at
 from src
