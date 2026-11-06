@@ -72,6 +72,7 @@
     <div>
       <h2 data-i18n="legend"></h2>
       <div class="legend" id="legend"></div>
+      <p class="note" style="margin:6px 0 0" data-i18n="legendNote"></p>
     </div>
     <p class="note" data-i18n="method"></p>
     <p class="note" data-i18n="sources"></p>
@@ -86,7 +87,8 @@ const T = {
     exposed: "people in divisions with high-risk air", hotspots: "satellite hotspots", peakAqhi: "peak AQHI",
     seasonChart: "Population exposed (millions)", layers: "Layers", legend: "Daily peak AQHI",
     lyrAqhi: "Census divisions by peak AQHI", lyrHot: "Satellite hotspots", lyrPerim: "2023 final fire perimeters",
-    noData: "no AQHI station", pop: "Population (2021)", fires: "Hotspots", hours: "High-risk hours",
+    noData: "no AQHI station",
+    legendNote: "Uncoloured divisions have no AQHI station: no data, not clean air.", pop: "Population (2021)", fires: "Hotspots", hours: "High-risk hours",
     pm25: "PM2.5 daily mean (max station)", exposedPop: "Counted as exposed",
     season2023: "2023 fire season", recent: "Recent days",
     method: "Exposure is estimated per 2021 census division: if any AQHI location in a division had a high-risk hour (rounded AQHI 7+) that UTC day, its whole population is counted. Totals are upper bounds. 2023 AQHI is computed from NAPS measurements with Health Canada's formula; recent AQHI is ECCC's published value.",
@@ -97,7 +99,8 @@ const T = {
     exposed: "personnes dans des divisions à risque élevé", hotspots: "points chauds satellitaires", peakAqhi: "CAS maximale",
     seasonChart: "Population exposée (millions)", layers: "Couches", legend: "Cote air santé (CAS) maximale du jour",
     lyrAqhi: "Divisions de recensement selon la CAS", lyrHot: "Points chauds satellitaires", lyrPerim: "Périmètres finaux des feux 2023",
-    noData: "aucune station CAS", pop: "Population (2021)", fires: "Points chauds", hours: "Heures à risque élevé",
+    noData: "aucune station CAS",
+    legendNote: "Les divisions non colorées n'ont aucune station CAS : absence de données, pas air pur.", pop: "Population (2021)", fires: "Points chauds", hours: "Heures à risque élevé",
     pm25: "PM2,5 moyenne quotidienne (station max.)", exposedPop: "Comptée comme exposée",
     season2023: "Saison des feux 2023", recent: "Jours récents",
     method: "L'exposition est estimée par division de recensement 2021 : si un lieu de mesure de la CAS d'une division a connu une heure à risque élevé (CAS arrondie de 7 ou plus) ce jour-là (UTC), toute sa population est comptée. Les totaux sont des bornes supérieures. La CAS de 2023 est calculée à partir des mesures du SNPA selon la formule de Santé Canada; la CAS récente est la valeur publiée par ECCC.",

@@ -61,6 +61,41 @@ Validated against known events: computed AQHI of 15-17 in Montreal on 2023-06-25
 hotspot peak in June, the Northwest Territories' in August, and 16.0 M ha of season perimeters
 nationally. See `docs/sources/` for each source's profile and caveats.
 
+## API and dashboard
+
+```bash
+uv pip install -e ".[api]"
+uvicorn smokewatch.api.main:app --port 8000
+```
+
+- **Dashboard:** http://localhost:8000/ — bilingual (EN/FR) map of census divisions coloured by
+  daily peak AQHI (official AQHI scale), satellite hotspots and 2023 final fire perimeters,
+  with a season replay and an exposure chart
+- **API docs:** http://localhost:8000/docs
+
+| Endpoint | Returns |
+|---|---|
+| `GET /health` | Status and data coverage |
+| `GET /exposure/daily?start=&end=` | National daily totals: population exposed, hotspots, peak AQHI |
+| `GET /exposure?date=&province=` | Census divisions for a day, most exposed first |
+| `GET /geo/census-divisions?date=` | GeoJSON census divisions with the day's metrics |
+| `GET /geo/hotspots?date=&province=&limit=` | GeoJSON hotspots (strongest first) |
+| `GET /geo/fires/season/{year}` | GeoJSON final season perimeters |
+| `GET /fires/{id}/history` | SCD2 growth history of a current fire |
+| `GET /aqhi?date=&cduid=` | Hourly AQHI for a census division |
+
+### Peak exposure days, 2023
+
+| Day | People in divisions with high-risk air | Peak AQHI |
+|---|---|---|
+| 2023-06-30 | 15.4 M | 12.0 |
+| 2023-06-06 | 12.6 M | 14.3 |
+| 2023-07-01 | 12.6 M | 16.0 |
+| 2023-06-07 | 10.6 M | 30.6 |
+
+Upper bounds: a division's whole population counts once any of its AQHI locations reaches
+high risk (rounded AQHI 7+) that UTC day.
+
 ## Orchestration (Dagster)
 
 ```bash
@@ -93,7 +128,7 @@ export DAGSTER_HOME="$PWD/.dagster" && dagster dev   # UI at http://localhost:30
 - [x] Sprint 4 — dbt models, spatial joins, SCD2 fire tracking
 - [x] Sprint 5 — Orchestration and data quality
 - [x] Sprint 6 — Historical backfill (2023 season)
-- [ ] Sprint 7 — API and map dashboard
+- [x] Sprint 7 — API and map dashboard
 - [ ] Sprint 8 — CI/CD, docs, bilingual README
 
 ## Licence and data attribution
