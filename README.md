@@ -10,7 +10,7 @@ Canadian provinces and territories, and estimates daily population exposure to p
 | Source | Publisher | Content | Cadence |
 |---|---|---|---|
 | CWFIS hotspots (WFS) | Natural Resources Canada | Satellite-detected fire hotspots | Daily |
-| CWFIS fire perimeters | Natural Resources Canada | Active fire perimeters | Daily |
+| CWFIS fire perimeters | Natural Resources Canada | Current fire perimeters, snapshotted daily for SCD2 history | Daily |
 | MSC GeoMet / Datamart | Environment and Climate Change Canada | AQHI observations and forecasts, weather | Hourly |
 | Census 2021 | Statistics Canada | Census division and province boundaries, population (table 98-10-0007-01) | Static |
 
@@ -39,7 +39,10 @@ smokewatch aqhi observations --sink s3   # today's hourly AQHI
 smokewatch aqhi forecasts --sink s3      # merge current forecast window
 smokewatch weather --sink s3             # yesterday's hourly weather, all stations
 smokewatch statcan --sink s3             # 2021 Census boundaries + population (once)
-smokewatch load census                   # bronze -> PostGIS raw schema
+smokewatch perimeters --sink s3          # daily fire perimeter snapshot
+smokewatch load census                   # bronze -> PostGIS raw schema (once)
+smokewatch load features                 # bronze -> raw, only changed partitions
+set -a && source .env && set +a && dbt build --project-dir transform --profiles-dir transform
 ```
 
 ## Roadmap
@@ -47,7 +50,7 @@ smokewatch load census                   # bronze -> PostGIS raw schema
 - [x] Sprint 1 — Repo setup, local stack, CWFIS hotspot extractor to bronze
 - [x] Sprint 2 — AQHI and weather ingestion
 - [x] Sprint 3 — Census boundaries and population in PostGIS
-- [ ] Sprint 4 — dbt models, spatial joins, SCD2 fire tracking
+- [x] Sprint 4 — dbt models, spatial joins, SCD2 fire tracking
 - [ ] Sprint 5 — Orchestration and data quality
 - [ ] Sprint 6 — Historical backfill (2023 season)
 - [ ] Sprint 7 — API and map dashboard
