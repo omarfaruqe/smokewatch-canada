@@ -57,3 +57,21 @@ models:
     columns:
       - name: population_exposed_high_risk
         data_tests: [non_negative]
+
+  - name: dim_fire_perimeter_history
+    description: >
+      SCD Type 2 history of Canadian fire perimeters (valid_from inclusive, valid_to
+      exclusive, null while current), derived from daily snapshots.
+    data_tests:
+      - unique:
+          column_name: "perimeter_id || '|' || version::text"
+    columns:
+      - name: valid_from
+        data_tests: [not_null]
+      - name: cduid
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_census_division')
+                field: cduid

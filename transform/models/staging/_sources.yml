@@ -7,6 +7,8 @@ sources:
     tables:
       - name: cwfis_hotspots
         description: CWFIS satellite hotspots (North America), both 24 h and season layers.
+      - name: cwfis_fire_perimeters
+        description: Daily snapshots of CWFIS current fire perimeters (M3 polygons, North America).
       - name: eccc_aqhi_observations
         description: ECCC hourly AQHI observations.
       - name: eccc_aqhi_forecasts

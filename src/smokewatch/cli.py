@@ -6,7 +6,13 @@ import argparse
 import logging
 from datetime import date
 
-from smokewatch.extractors import cwfis_hotspots, eccc_aqhi, eccc_climate, statcan
+from smokewatch.extractors import (
+    cwfis_hotspots,
+    cwfis_perimeters,
+    eccc_aqhi,
+    eccc_climate,
+    statcan,
+)
 from smokewatch.storage import get_store
 
 
@@ -23,6 +29,8 @@ def main(argv: list[str] | None = None) -> None:
     sub = parser.add_subparsers(dest="command", required=True)
 
     _add_dates(sub.add_parser("hotspots", help="CWFIS fire hotspots -> bronze"))
+    pm = sub.add_parser("perimeters", help="snapshot CWFIS current fire perimeters -> bronze")
+    pm.add_argument("--sink", choices=["local", "s3"], default="s3")
     aq = sub.add_parser("aqhi", help="ECCC AQHI observations or forecasts -> bronze")
     aq.add_argument("kind", choices=["observations", "forecasts"])
     _add_dates(aq)
@@ -51,6 +59,10 @@ def main(argv: list[str] | None = None) -> None:
         else:
             r = cwfis_hotspots.extract(store, args.date)
             print(f"{r.layer} {r.day}: {r.feature_count} hotspots -> {r.data_key}")
+
+    elif args.command == "perimeters":
+        r = cwfis_perimeters.snapshot(store)
+        print(f"{r.feature_count} fire perimeters -> {r.data_key}")
 
     elif args.command == "aqhi":
         if args.kind == "forecasts":

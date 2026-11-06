@@ -11,6 +11,15 @@ models:
       - name: geom
         data_tests: [not_null]
 
+  - name: stg_cwfis__fire_perimeters
+    description: Fire perimeters, one row per perimeter per daily snapshot.
+    data_tests:
+      - unique:
+          column_name: "perimeter_id || '|' || snapshot_date::text"
+    columns:
+      - name: area_ha
+        data_tests: [not_null, non_negative]
+
   - name: stg_eccc__aqhi_observations
     description: Hourly AQHI observations, one row per location-hour (amendments win).
     data_tests:

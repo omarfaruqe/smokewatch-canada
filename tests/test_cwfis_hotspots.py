@@ -79,3 +79,11 @@ def test_backfill_skips_existing_days(tmp_path):
     cw.extract(store, date(2023, 6, 1), session=FakeSession(total=2))
     results = cw.backfill(store, date(2023, 6, 1), date(2023, 6, 3), session=FakeSession(total=2))
     assert [r.day for r in results] == [date(2023, 6, 2), date(2023, 6, 3)]
+
+
+def test_fetch_features_sort_is_optional():
+    s = FakeSession(total=2)
+    cw.fetch_features(cw.LAYER_ALL, session=s, sort_by=None)
+    assert "sortBy" not in s.calls[0]
+    cw.fetch_features(cw.LAYER_ALL, session=s)
+    assert s.calls[-1]["sortBy"] == "rep_date"

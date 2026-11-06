@@ -73,8 +73,9 @@ def fetch_features(
     cql_filter: str | None = None,
     session: requests.Session | None = None,
     page_size: int = PAGE_SIZE,
+    sort_by: str | None = "rep_date",
 ) -> list[dict]:
-    """Page through a WFS layer and return all GeoJSON features."""
+    """Page through a WFS layer and return all GeoJSON features (sorted for stable paging)."""
     session = session or requests.Session()
     session.headers.setdefault("User-Agent", settings.user_agent)
     features: list[dict] = []
@@ -87,10 +88,11 @@ def fetch_features(
             "typeNames": layer,
             "outputFormat": "application/json",
             "srsName": "EPSG:4326",
-            "sortBy": "rep_date",
             "count": page_size,
             "startIndex": start,
         }
+        if sort_by:
+            params["sortBy"] = sort_by
         if cql_filter:
             params["CQL_FILTER"] = cql_filter
         page = _get_with_retry(session, settings.cwfis_wfs_url, params)

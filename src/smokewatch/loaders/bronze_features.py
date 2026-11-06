@@ -29,6 +29,7 @@ log = logging.getLogger(__name__)
 # dataset -> (bronze prefix, raw table)
 DATASETS: dict[str, tuple[str, str]] = {
     "hotspots": ("cwfis/hotspots/", "cwfis_hotspots"),
+    "fire_perimeters": ("cwfis/perimeters/", "cwfis_fire_perimeters"),
     "aqhi_observations": ("eccc/aqhi-observations-realtime/", "eccc_aqhi_observations"),
     "aqhi_forecasts": ("eccc/aqhi-forecasts-realtime/", "eccc_aqhi_forecasts"),
     "weather": ("eccc/climate-hourly/", "eccc_climate_hourly"),
