@@ -1,0 +1,59 @@
+version: 2
+
+models:
+  - name: dim_census_division
+    description: 2021 census divisions with province attributes, population, analysis and display geometry.
+    columns:
+      - name: cduid
+        data_tests: [unique, not_null]
+      - name: province_code
+        data_tests: [not_null]
+      - name: geom_4326
+        data_tests: [valid_geometry]
+
+  - name: int_location_census_division
+    description: AQHI communities and weather stations mapped to their (nearest) census division.
+    data_tests:
+      - unique:
+          column_name: "point_type || '|' || point_id"
+    columns:
+      - name: cduid
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_census_division')
+                field: cduid
+
+  - name: fct_hotspots
+    description: Canadian satellite hotspots, one per detection, with census division.
+    columns:
+      - name: hotspot_id
+        data_tests: [unique, not_null]
+      - name: cduid
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_census_division')
+                field: cduid
+
+  - name: fct_aqhi_hourly
+    description: Hourly AQHI observations with census division and risk category.
+    data_tests:
+      - unique:
+          column_name: "location_id || '|' || observed_at::text"
+    columns:
+      - name: risk_category
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["low", "moderate", "high", "very_high"]
+
+  - name: fct_daily_exposure
+    description: Census division x UTC day fire activity, air quality and population exposure.
+    data_tests:
+      - unique:
+          column_name: "cduid || '|' || day::text"
+    columns:
+      - name: population_exposed_high_risk
+        data_tests: [non_negative]

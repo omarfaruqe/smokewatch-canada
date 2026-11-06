@@ -1,0 +1,10 @@
+version: 2
+
+seeds:
+  - name: province_codes
+    description: StatCan PRUID to postal code, bilingual names and region (CWFIS/ECCC use postal codes).
+    columns:
+      - name: pruid
+        data_tests: [unique, not_null]
+      - name: postal_code
+        data_tests: [unique, not_null]

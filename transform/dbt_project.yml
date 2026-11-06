@@ -6,6 +6,7 @@ profile: smokewatch
 model-paths: ["models"]
 macro-paths: ["macros"]
 test-paths: ["tests"]
+seed-paths: ["seeds"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
@@ -14,6 +15,17 @@ models:
     staging:
       +schema: staging
       +materialized: view
+    intermediate:
+      +schema: staging
+      +materialized: table
     marts:
       +schema: marts
       +materialized: table
+
+seeds:
+  smokewatch:
+    +schema: reference
+    province_codes:
+      +column_types:
+        pruid: text
+        postal_code: text

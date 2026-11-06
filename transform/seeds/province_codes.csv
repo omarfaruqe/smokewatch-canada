@@ -1,0 +1,14 @@
+pruid,postal_code,name_en,name_fr,region
+10,NL,Newfoundland and Labrador,Terre-Neuve-et-Labrador,Atlantic
+11,PE,Prince Edward Island,Île-du-Prince-Édouard,Atlantic
+12,NS,Nova Scotia,Nouvelle-Écosse,Atlantic
+13,NB,New Brunswick,Nouveau-Brunswick,Atlantic
+24,QC,Quebec,Québec,Central
+35,ON,Ontario,Ontario,Central
+46,MB,Manitoba,Manitoba,Prairies
+47,SK,Saskatchewan,Saskatchewan,Prairies
+48,AB,Alberta,Alberta,Prairies
+59,BC,British Columbia,Colombie-Britannique,West Coast
+60,YT,Yukon,Yukon,North
+61,NT,Northwest Territories,Territoires du Nord-Ouest,North
+62,NU,Nunavut,Nunavut,North
