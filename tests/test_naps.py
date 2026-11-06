@@ -47,6 +47,31 @@ def test_parse_hourly_skips_preamble_and_keeps_text():
     assert row["h12"] == "-999" and row["h24"] == "0"
 
 
+def test_parse_hourly_handles_missing_method_code_and_unpadded_ids():
+    pytest.importorskip("pandas")
+    from smokewatch.loaders.naps import parse_hourly
+
+    no2 = (
+        "Pollutant//Polluant,NAPS ID//Identifiant SNPA,City//Ville,"
+        "Province/Territory//Province/Territoire,Latitude//Latitude,Longitude//Longitude,Date//Date,"
+        + ",".join(f"H{h:02d}//H{h:02d}" for h in range(1, 25)) + "\n"
+        "NO2,10102,St. John's,NL,47.56038,-52.71147,2023-01-01," + ",".join(["7"] * 24) + "\n"
+    ).encode()
+    row = parse_hourly(no2).iloc[0]
+    assert row["method_code"] is None
+    assert row["naps_id"] == "010102" and row["city"] == "St. John's" and row["province"] == "NL"
+    assert row["date"] == "2023-01-01" and row["h24"] == "7"
+
+
+def test_parse_hourly_rejects_unknown_columns():
+    pytest.importorskip("pandas")
+    from smokewatch.loaders.naps import parse_hourly
+
+    bad = b"Pollutant//Polluant,Mystery//Mystere,Date//Date\nPM2.5,x,2023-01-01\n"
+    with pytest.raises(ValueError, match="unexpected NAPS columns"):
+        parse_hourly(bad)
+
+
 def test_parse_stations_reads_first_block_only():
     pytest.importorskip("pandas")
     from smokewatch.loaders.naps import parse_stations

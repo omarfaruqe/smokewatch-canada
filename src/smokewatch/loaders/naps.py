@@ -28,17 +28,34 @@ HOURLY_COLUMNS = (
 )
 
 
-def parse_hourly(data: bytes) -> pd.DataFrame:
-    """Skip the bilingual preamble; the table starts at the 'Pollutant//Polluant' header."""
-    lines = data.decode("utf-8-sig").splitlines()
-    start = next(i for i, ln in enumerate(lines) if ln.startswith("Pollutant//Polluant"))
-    df = pd.read_csv(io.StringIO("\n".join(lines[start + 1:])), header=None, dtype=str,
-                     names=HOURLY_COLUMNS, keep_default_na=False)
-    return df
-
-
 def _snake(name: str) -> str:
     return re.sub(r"[^0-9a-z]+", "_", name.lower()).strip("_")
+
+
+def _english(header: str) -> str:
+    """'NAPS ID//Identifiant SNPA' -> 'naps_id'; 'Province/Territory//...' -> 'province'."""
+    name = _snake(header.split("//", 1)[0])
+    return {"province_territory": "province"}.get(name, name)
+
+
+def parse_hourly(data: bytes) -> pd.DataFrame:
+    """Skip the bilingual preamble and map columns by header name.
+
+    Files differ per pollutant: PM2.5 has a Method Code column, NO2 does not, and some files
+    drop the leading zero of NAPS IDs. Missing columns become null; IDs are padded to 6 digits.
+    """
+    lines = data.decode("utf-8-sig").splitlines()
+    start = next(i for i, ln in enumerate(lines) if ln.startswith("Pollutant//Polluant"))
+    df = pd.read_csv(io.StringIO("\n".join(lines[start:])), dtype=str, keep_default_na=False)
+    df.columns = [_english(c) for c in df.columns]
+    unknown = set(df.columns) - set(HOURLY_COLUMNS)
+    if unknown:
+        raise ValueError(f"unexpected NAPS columns: {sorted(unknown)}")
+    for col in HOURLY_COLUMNS:
+        if col not in df.columns:
+            df[col] = None
+    df["naps_id"] = df["naps_id"].str.strip().str.zfill(6)
+    return df[HOURLY_COLUMNS]
 
 
 def parse_stations(data: bytes) -> pd.DataFrame:
@@ -53,6 +70,15 @@ def parse_stations(data: bytes) -> pd.DataFrame:
         if r and r[0]:
             body.append(r[:len(header)])
     return pd.DataFrame(body, columns=[_snake(h) for h in header])
+
+
+def _copy_rows(conn, df: pd.DataFrame) -> None:
+    """Bulk-insert with Postgres COPY (much faster than multi-row INSERTs)."""
+    cols = ["partition", *HOURLY_COLUMNS]
+    with conn.connection.driver_connection.cursor() as cur:
+        with cur.copy(f"COPY raw.naps_hourly ({', '.join(cols)}) FROM STDIN") as cp:
+            for row in df[cols].itertuples(index=False, name=None):
+                cp.write_row(row)
 
 
 def _done(conn, dataset: str) -> dict[str, str]:
@@ -98,8 +124,7 @@ def load(store: BronzeStore, engine: Engine | None = None, force: bool = False) 
         df.insert(0, "partition", folder)
         with engine.begin() as conn:
             conn.execute(text("DELETE FROM raw.naps_hourly WHERE partition = :p"), {"p": folder})
-            df.to_sql("naps_hourly", conn, schema="raw", if_exists="append", index=False,
-                      method="multi", chunksize=2000)
+            _copy_rows(conn, df)
             _log(conn, "naps_hourly", folder, manifest["sha256"], len(df))
         log.info("loaded %d station-days from %s", len(df), folder)
         stats["hourly_partitions"] += 1
