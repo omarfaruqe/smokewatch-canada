@@ -1,3 +1,15 @@
+{{ config(
+    materialized='incremental',
+    unique_key='hotspot_id',
+    incremental_strategy='delete+insert',
+    on_schema_change='append_new_columns',
+    post_hook=[
+        "create index if not exists {{ this.name }}_day_idx on {{ this }} (detected_date_utc)",
+        "create index if not exists {{ this.name }}_geom_idx on {{ this }} using gist (geom)",
+    ]
+) }}
+
+-- Incremental on the staging loaded_at watermark.
 -- Canadian satellite hotspots: CWFIS covers North America, so keep only detections that
 -- fall inside a 2021 census division. The join uses subdivided division pieces for speed;
 -- a point on a piece boundary can match twice, so keep one match per hotspot. agency_matches_province cross-checks the source's own
@@ -29,7 +41,8 @@ select
     h.fuel_type,
     h.ecozone,
     h.confidence,
-    h.geom
+    h.geom,
+    h.loaded_at
 from {{ ref('stg_cwfis__hotspots') }} h
 join lateral (
     select p.cduid
@@ -39,3 +52,6 @@ join lateral (
     limit 1
 ) part on true
 join {{ ref('dim_census_division') }} cd on cd.cduid = part.cduid
+{% if is_incremental() %}
+where h.loaded_at > (select coalesce(max(loaded_at), '-infinity') from {{ this }})
+{% endif %}

@@ -1,5 +1,8 @@
 {{ config(
-    materialized='table',
+    materialized='incremental',
+    unique_key='hotspot_id',
+    incremental_strategy='delete+insert',
+    on_schema_change='append_new_columns',
     post_hook=[
         "create index if not exists {{ this.name }}_id_idx on {{ this }} (hotspot_id)",
         "create index if not exists {{ this.name }}_geom_idx on {{ this }} using gist (geom)",
@@ -7,8 +10,9 @@
     ]
 ) }}
 
--- Table, not view: seasonal backfills put millions of rows here, and every test on a view
--- would re-run the dedup window over raw jsonb.
+-- Incremental: only raw rows loaded since the last run are processed (watermark on
+-- loaded_at), and a hotspot seen again (24 h layer, then season layer) replaces its earlier
+-- row. Rows deleted from raw are not removed here: use --full-refresh after rebuilding raw.
 -- One row per hotspot. The same uid appears in the 24 h and season layers and in repeated
 -- daily pulls, so keep the most recently loaded copy.
 with src as (
@@ -23,6 +27,9 @@ with src as (
         ) as rn
     from {{ source('raw', 'cwfis_hotspots') }}
     where properties ->> 'uid' is not null
+    {% if is_incremental() %}
+      and loaded_at > (select coalesce(max(loaded_at), '-infinity') from {{ this }})
+    {% endif %}
 )
 
 select

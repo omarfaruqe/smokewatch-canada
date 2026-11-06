@@ -1,4 +1,15 @@
+{{ config(
+    materialized='incremental',
+    unique_key=['climate_id', 'observed_at'],
+    incremental_strategy='delete+insert',
+    on_schema_change='append_new_columns',
+    post_hook=[
+        "create index if not exists {{ this.name }}_key_idx on {{ this }} (climate_id, observed_at)",
+    ]
+) }}
+
 -- One row per station per UTC hour. UTC_DATE has no zone suffix: it is UTC by definition.
+-- Incremental on loaded_at (3.3 M rows for one season); re-loaded days replace their rows.
 with src as (
     select
         properties as p,
@@ -9,6 +20,9 @@ with src as (
             order by loaded_at desc
         ) as rn
     from {{ source('raw', 'eccc_climate_hourly') }}
+    {% if is_incremental() %}
+    where loaded_at > (select coalesce(max(loaded_at), '-infinity') from {{ this }})
+    {% endif %}
 )
 
 select

@@ -1,3 +1,5 @@
+{{ config(post_hook="create index if not exists {{ this.name }}_day_idx on {{ this }} (observed_date_utc, cduid)") }}
+
 -- Hourly AQHI from two sources, with census division and Health Canada risk category:
 --   eccc_observed   AQHI published by ECCC (recent days, from the realtime API)
 --   naps_computed   AQHI computed from NAPS archive measurements (historical seasons)

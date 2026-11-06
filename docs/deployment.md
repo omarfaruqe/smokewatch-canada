@@ -47,3 +47,13 @@ cd ~/smokewatch-canada && scripts/restore_snapshot.sh
 # Server
 cd ~/smokewatch-canada && git pull && docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
 ```
+
+## Incremental models and backfills
+
+`stg_cwfis__hotspots`, `fct_hotspots` and `stg_eccc__weather_hourly` process only raw rows
+loaded since their last run; `fct_daily_exposure` recomputes the last
+`exposure_lookback_days` days (default 3). After backfilling older dates, rebuild once with:
+
+```bash
+dbt build --project-dir transform --profiles-dir transform --full-refresh
+```

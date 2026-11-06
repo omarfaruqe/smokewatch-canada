@@ -1,3 +1,20 @@
+{{ config(
+    materialized='incremental',
+    unique_key=['cduid', 'day'],
+    incremental_strategy='delete+insert',
+    on_schema_change='append_new_columns',
+) }}
+
+{#- Incremental runs recompute the last `exposure_lookback_days` days (late AQHI amendments,
+    re-pulled weather). After backfilling older dates, run with --full-refresh. -#}
+{% set since %}
+    {% if is_incremental() %}
+        (select max(day) - {{ var('exposure_lookback_days', 3) }} from {{ this }})
+    {% else %}
+        '-infinity'::date
+    {% endif %}
+{% endset %}
+
 -- One row per census division per UTC day observed in any source (a full grid, so "no fire,
 -- clean air" days are explicit zeros, not missing rows).
 --
@@ -5,9 +22,13 @@
 -- reached a high-risk hour (rounded AQHI >= 7) that day, the division's 2021 population counts as
 -- exposed. Divisions with no AQHI community have aqhi_coverage = false and null AQHI metrics.
 with days as (
-    select detected_date_utc as day from {{ ref('fct_hotspots') }}
-    union
-    select observed_date_utc from {{ ref('fct_aqhi_hourly') }}
+    select day from (
+        select detected_date_utc as day from {{ ref('fct_hotspots') }}
+        where detected_date_utc >= {{ since }}
+        union
+        select observed_date_utc from {{ ref('fct_aqhi_hourly') }}
+        where observed_date_utc >= {{ since }}
+    ) d
 ),
 
 pm as (
@@ -23,6 +44,7 @@ pm as (
             avg(pm25)                          as pm25_daily_mean
         from {{ ref('int_naps_station_hourly') }}
         where pm25 is not null
+          and observed_at >= ({{ since }})::timestamp at time zone 'UTC'
         group by 1, 2
         having count(pm25) >= 18               -- at least 75% of the day
     ) d
@@ -39,6 +61,7 @@ fire as (
         round(sum(frp_mw), 1)                  as total_frp_mw,
         max(fwi)                               as max_fwi
     from {{ ref('fct_hotspots') }}
+    where detected_date_utc >= {{ since }}
     group by 1, 2
 ),
 
@@ -52,6 +75,7 @@ air as (
         count(distinct location_id)            as aqhi_locations,
         string_agg(distinct aqhi_source, ',')  as aqhi_sources
     from {{ ref('fct_aqhi_hourly') }}
+    where observed_date_utc >= {{ since }}
     group by 1, 2
 ),
 
@@ -64,6 +88,7 @@ smoke as (
     join {{ ref('int_location_census_division') }} lc
         on lc.point_type = 'weather' and lc.point_id = w.climate_id
     where w.smoke_reported
+      and w.observed_at >= ({{ since }})::timestamp at time zone 'UTC'
     group by 1, 2
 )
 
