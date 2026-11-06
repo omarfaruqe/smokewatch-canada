@@ -4,7 +4,6 @@ services:
     platform: linux/amd64   # no official arm64 build; runs under emulation on Apple Silicon
     container_name: smokewatch-postgres
     restart: unless-stopped
-    command: ["postgres", "-c", "track_commit_timestamp=on"]  # used by dbt state tracking
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

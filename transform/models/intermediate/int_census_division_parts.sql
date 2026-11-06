@@ -1,4 +1,4 @@
-{{ config(post_hook="create index if not exists int_census_division_parts_geom_idx on {{ this }} using gist (geom_3347)") }}
+{{ config(indexes=[{'columns': ['geom_3347'], 'type': 'gist'}]) }}
 
 -- Census divisions cut into pieces of at most 255 vertices for fast point-in-polygon joins.
 -- Detailed coastlines (BC, Nunavut) make whole-polygon tests slow; small pieces keep each

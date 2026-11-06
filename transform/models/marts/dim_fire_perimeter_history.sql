@@ -1,4 +1,4 @@
-{{ config(post_hook="create index if not exists dim_fire_perimeter_history_geom_idx on {{ this }} using gist (geom)") }}
+{{ config(indexes=[{'columns': ['geom'], 'type': 'gist'}]) }}
 
 -- SCD Type 2 history of Canadian fire perimeters, derived from daily bronze snapshots.
 --

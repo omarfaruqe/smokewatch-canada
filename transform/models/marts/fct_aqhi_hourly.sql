@@ -1,4 +1,4 @@
-{{ config(post_hook="create index if not exists {{ this.name }}_day_idx on {{ this }} (observed_date_utc, cduid)") }}
+{{ config(indexes=[{'columns': ['observed_date_utc', 'cduid'], 'type': 'btree'}]) }}
 
 -- Hourly AQHI from two sources, with census division and Health Canada risk category:
 --   eccc_observed   AQHI published by ECCC (recent days, from the realtime API)

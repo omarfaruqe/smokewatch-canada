@@ -3,9 +3,7 @@
     unique_key=['climate_id', 'observed_at'],
     incremental_strategy='delete+insert',
     on_schema_change='append_new_columns',
-    post_hook=[
-        "create index if not exists {{ this.name }}_key_idx on {{ this }} (climate_id, observed_at)",
-    ]
+    indexes=[{'columns': ['climate_id', 'observed_at'], 'type': 'btree'}],
 ) }}
 
 -- One row per station per UTC hour. UTC_DATE has no zone suffix: it is UTC by definition.

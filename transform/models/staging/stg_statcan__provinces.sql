@@ -1,4 +1,5 @@
-{{ config(materialized='table', post_hook="create index if not exists {{ this.name }}_geom_idx on {{ this }} using gist (geom_3347)") }}
+{{ config(materialized='table',
+    indexes=[{'columns': ['geom_3347'], 'type': 'gist'}]) }}
 
 -- Provinces/territories for maps and roll-ups: simplified to 200 m, repaired only if invalid.
 select

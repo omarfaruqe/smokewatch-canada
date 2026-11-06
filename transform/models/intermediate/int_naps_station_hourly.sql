@@ -1,4 +1,4 @@
-{{ config(post_hook="create index if not exists int_naps_station_hourly_idx on {{ this }} (naps_id, observed_at)") }}
+{{ config(indexes=[{'columns': ['naps_id', 'observed_at'], 'type': 'btree'}]) }}
 
 -- One row per NAPS station per UTC hour with PM2.5 (ug/m3), O3 and NO2 (ppb).
 -- Where a station runs several instruments for a pollutant, keep the method with the most

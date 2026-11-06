@@ -3,10 +3,7 @@
     unique_key='hotspot_id',
     incremental_strategy='delete+insert',
     on_schema_change='append_new_columns',
-    post_hook=[
-        "create index if not exists {{ this.name }}_day_idx on {{ this }} (detected_date_utc)",
-        "create index if not exists {{ this.name }}_geom_idx on {{ this }} using gist (geom)",
-    ]
+    indexes=[{'columns': ['detected_date_utc'], 'type': 'btree'}, {'columns': ['geom'], 'type': 'gist'}],
 ) }}
 
 -- Incremental on the staging loaded_at watermark.

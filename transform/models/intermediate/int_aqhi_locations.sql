@@ -1,4 +1,4 @@
-{{ config(post_hook="create index if not exists {{ this.name }}_geom_idx on {{ this }} using gist (geom_3347)") }}
+{{ config(indexes=[{'columns': ['geom_3347'], 'type': 'gist'}]) }}
 
 -- Every location that reports AQHI, by source: ECCC communities (observed) and NAPS stations
 -- that measure all three AQHI pollutants (computed).

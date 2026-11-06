@@ -1,4 +1,4 @@
-{{ config(post_hook="create index if not exists fct_fire_season_perimeters_geom_idx on {{ this }} using gist (geom_3347)") }}
+{{ config(indexes=[{'columns': ['geom_3347'], 'type': 'gist'}]) }}
 
 -- Final perimeter of every Canadian fire in archived seasons, located in the census division
 -- that contains a point on its surface. Complements dim_fire_perimeter_history (daily SCD2,

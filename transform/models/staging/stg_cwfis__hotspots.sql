@@ -3,11 +3,7 @@
     unique_key='hotspot_id',
     incremental_strategy='delete+insert',
     on_schema_change='append_new_columns',
-    post_hook=[
-        "create index if not exists {{ this.name }}_id_idx on {{ this }} (hotspot_id)",
-        "create index if not exists {{ this.name }}_geom_idx on {{ this }} using gist (geom)",
-        "create index if not exists {{ this.name }}_geom3347_idx on {{ this }} using gist (geom_3347)",
-    ]
+    indexes=[{'columns': ['hotspot_id'], 'type': 'btree'}, {'columns': ['geom'], 'type': 'gist'}, {'columns': ['geom_3347'], 'type': 'gist'}],
 ) }}
 
 -- Incremental: only raw rows loaded since the last run are processed (watermark on

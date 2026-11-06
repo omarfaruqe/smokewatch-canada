@@ -1,4 +1,5 @@
-{{ config(materialized='table', post_hook="create index if not exists {{ this.name }}_geom_idx on {{ this }} using gist (geom_3347)") }}
+{{ config(materialized='table',
+    indexes=[{'columns': ['geom_3347'], 'type': 'gist'}]) }}
 
 -- 2021 census divisions with typed 2021 population.
 -- Geometry is simplified to 50 m (well below satellite hotspot pixel size, 375-1000 m), then

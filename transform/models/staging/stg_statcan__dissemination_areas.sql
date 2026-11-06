@@ -1,4 +1,5 @@
-{{ config(materialized='table', post_hook="create index if not exists {{ this.name }}_geom_idx on {{ this }} using gist (geom_3347)") }}
+{{ config(materialized='table',
+    indexes=[{'columns': ['geom_3347'], 'type': 'gist'}]) }}
 
 -- 2021 dissemination areas (~57,000): population summed from dissemination blocks, located
 -- by StatCan's representative point (already in EPSG:3347 Lambert coordinates).

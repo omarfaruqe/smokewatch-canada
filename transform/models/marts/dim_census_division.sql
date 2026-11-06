@@ -1,4 +1,4 @@
-{{ config(post_hook="create index if not exists dim_census_division_geom_idx on {{ this }} using gist (geom_3347)") }}
+{{ config(indexes=[{'columns': ['geom_3347'], 'type': 'gist'}]) }}
 
 -- One row per 2021 census division, with province attributes and two geometries:
 --   geom_3347  analysis geometry (50 m), used for spatial joins
