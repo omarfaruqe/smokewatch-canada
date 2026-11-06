@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: stg_cwfis__hotspots
+    description: Deduplicated satellite hotspots (North America), typed.
+    columns:
+      - name: hotspot_id
+        data_tests: [unique, not_null]
+      - name: detected_at
+        data_tests: [not_null]
+      - name: geom
+        data_tests: [not_null]
+
+  - name: stg_eccc__aqhi_observations
+    description: Hourly AQHI observations, one row per location-hour (amendments win).
+    data_tests:
+      - unique:
+          column_name: "location_id || '|' || observed_at::text"
+    columns:
+      - name: location_id
+        data_tests: [not_null]
+      - name: observed_at
+        data_tests: [not_null]
+      - name: aqhi
+        description: AQHI is open-ended (10+ = very high risk) but never negative.
+        data_tests:
+          - not_null
+          - non_negative
+
+  - name: stg_eccc__aqhi_forecasts_hourly
+    columns:
+      - name: forecast_id
+        data_tests: [unique, not_null]
+      - name: lead_hours
+        data_tests: [not_null]
+
+  - name: stg_eccc__aqhi_forecasts_period
+    data_tests:
+      - unique:
+          column_name: "forecast_id || '|' || period_number::text"
+
+  - name: stg_eccc__weather_hourly
+    description: Hourly weather, one row per station-hour.
+    data_tests:
+      - unique:
+          column_name: "climate_id || '|' || observed_at::text"
+    columns:
+      - name: climate_id
+        data_tests: [not_null]
+      - name: province_code
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["NL", "PE", "NS", "NB", "QC", "ON", "MB", "SK", "AB", "BC", "YT", "NT", "NU"]  # quoted: bare ON is YAML true
+
+  - name: stg_statcan__census_divisions
+    columns:
+      - name: cduid
+        data_tests: [unique, not_null]
+      - name: population_2021
+        data_tests: [not_null]
+      - name: geom_3347
+        data_tests: [not_null, valid_geometry]
+
+  - name: stg_statcan__provinces
+    columns:
+      - name: pruid
+        data_tests: [unique, not_null]
+      - name: geom_3347
+        data_tests: [valid_geometry]

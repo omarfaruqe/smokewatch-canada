@@ -1,0 +1,13 @@
+# Credentials come from the environment (.env); nothing secret is committed.
+smokewatch:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5433') | int }}"
+      user: "{{ env_var('POSTGRES_USER', 'smokewatch') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'smokewatch') }}"
+      schema: analytics
+      threads: 2

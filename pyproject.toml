@@ -19,6 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.5"]
+dbt = ["dbt-core==1.12.6", "dbt-postgres==1.11.0"]
 
 [project.scripts]
 smokewatch = "smokewatch.cli:main"

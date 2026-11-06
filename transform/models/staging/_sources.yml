@@ -1,0 +1,23 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: Bronze data loaded as-is by `smokewatch load` (jsonb properties + PostGIS geom).
+    tables:
+      - name: cwfis_hotspots
+        description: CWFIS satellite hotspots (North America), both 24 h and season layers.
+      - name: eccc_aqhi_observations
+        description: ECCC hourly AQHI observations.
+      - name: eccc_aqhi_forecasts
+        description: ECCC AQHI forecasts (hourly and named-period records).
+      - name: eccc_climate_hourly
+        description: ECCC hourly climate observations for all stations.
+      - name: statcan_census_divisions
+        description: 2021 census division cartographic boundaries, EPSG:3347.
+      - name: statcan_provinces
+        description: 2021 province/territory cartographic boundaries, EPSG:3347.
+      - name: statcan_population_cd
+        description: Table 98-10-0007-01, population and dwelling counts (all values text).
+      - name: _load_log
+        description: One row per loaded bronze partition with its sha256.
