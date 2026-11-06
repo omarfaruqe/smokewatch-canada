@@ -152,7 +152,12 @@ export DAGSTER_HOME="$PWD/.dagster" && dagster dev   # UI at http://localhost:30
 - [x] Sprint 5 — Orchestration and data quality
 - [x] Sprint 6 — Historical backfill (2023 season)
 - [x] Sprint 7 — API and map dashboard
-- [ ] Sprint 8 — CI/CD, docs, bilingual README
+- [x] Sprint 8 — CI/CD, docs, bilingual README, deployment
+
+## Deployment
+
+Snapshot deployment behind a reverse proxy (API, dashboard and the `marts` schema only):
+see [docs/deployment.md](docs/deployment.md).
 
 ## Licence and data attribution
 

@@ -1,0 +1,9 @@
+.git
+.venv
+.dagster
+data
+logs
+transform/target
+transform/logs
+**/__pycache__
+.env

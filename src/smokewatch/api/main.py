@@ -3,6 +3,7 @@
 Run:  uvicorn smokewatch.api.main:app --reload     (docs at http://localhost:8000/docs)
 """
 
+import os
 from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
@@ -22,6 +23,9 @@ Province = Literal["NL", "PE", "NS", "NB", "QC", "ON", "MB", "SK", "AB", "BC", "
 MAX_RANGE_DAYS = 400
 
 app = FastAPI(
+    # Set API_ROOT_PATH=/smokewatch when served under that path by a reverse proxy, so the
+    # interactive docs load their OpenAPI schema from the right URL.
+    root_path=os.getenv("API_ROOT_PATH", ""),
     title="SmokeWatch Canada API",
     version=__version__,
     description=(

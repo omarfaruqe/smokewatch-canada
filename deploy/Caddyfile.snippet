@@ -1,0 +1,6 @@
+# Add inside the existing site block of ~/gateway/Caddyfile, next to the other apps.
+# handle_path strips /smokewatch before proxying; the app knows its prefix via API_ROOT_PATH.
+redir /smokewatch /smokewatch/ 308
+handle_path /smokewatch/* {
+	reverse_proxy 127.0.0.1:8095
+}

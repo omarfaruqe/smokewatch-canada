@@ -26,3 +26,7 @@ logs/
 
 # Dagster local instance
 .dagster/
+
+# Deployment snapshot and server env
+deploy/snapshot/
+deploy/.env
