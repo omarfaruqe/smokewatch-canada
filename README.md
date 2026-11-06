@@ -1,9 +1,11 @@
 # SmokeWatch Canada
 
+[![CI](https://github.com/omarfaruqe/smokewatch-canada/actions/workflows/ci.yml/badge.svg)](https://github.com/omarfaruqe/smokewatch-canada/actions/workflows/ci.yml)
+
 A national data engineering platform that tracks wildfires, smoke and air quality across all
 Canadian provinces and territories, and estimates daily population exposure to poor air.
 
-*Version française à venir.*
+**[Version française](README.fr.md)**
 
 ## Data sources
 
@@ -16,15 +18,36 @@ Canadian provinces and territories, and estimates daily population exposure to p
 | CWFIS perimeter archive | Natural Resources Canada | Final fire perimeters of past seasons | Yearly |
 | Census 2021 | Statistics Canada | Census division and province boundaries, population (table 98-10-0007-01) | Static |
 
-## Architecture (target)
+## Architecture
 
-```
-extractors (Python) ──► S3 bronze (SeaweedFS) (raw, partitioned by source/date)
-                              │
-                              ▼
-                    Postgres + PostGIS ──► dbt silver / gold ──► FastAPI + map dashboard
-                              ▲
-              orchestration (Dagster) · data quality (dbt tests / Soda)
+```mermaid
+flowchart LR
+    subgraph Sources["Open data sources"]
+        CWFIS["NRCan CWFIS<br/>hotspots, perimeters"]
+        ECCC["ECCC GeoMet<br/>AQHI, weather"]
+        NAPS["ECCC NAPS<br/>PM2.5, O3, NO2"]
+        STATCAN["Statistics Canada<br/>Census 2021"]
+    end
+    subgraph Bronze["Bronze: S3 (SeaweedFS)"]
+        B["Raw files per source and date<br/>+ sha256 manifests"]
+    end
+    subgraph Warehouse["Postgres + PostGIS"]
+        RAW["raw<br/>jsonb + geometry"]
+        STG["staging<br/>typed, deduplicated"]
+        MARTS["marts<br/>facts, dimensions, SCD2"]
+    end
+    subgraph Serve["Serving"]
+        API["FastAPI"]
+        DASH["Bilingual map dashboard"]
+    end
+    Sources -->|"Python extractors<br/>retries, idempotent"| B
+    B -->|"incremental COPY loads"| RAW
+    RAW -->|dbt| STG -->|dbt| MARTS
+    MARTS --> API --> DASH
+    DAG["Dagster<br/>schedules, freshness checks"] -.orchestrates.- B
+    DAG -.- RAW
+    DAG -.- STG
+    CI["GitHub Actions<br/>ruff, pytest, dbt compile"] -.checks.- Warehouse
 ```
 
 ## Quick start
