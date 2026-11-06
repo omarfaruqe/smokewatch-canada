@@ -10,6 +10,27 @@ with days as (
     select observed_date_utc from {{ ref('fct_aqhi_hourly') }}
 ),
 
+pm as (
+    select
+        lc.cduid,
+        d.day,
+        round(max(d.pm25_daily_mean), 1)       as pm25_max_station_daily_mean,
+        count(*) filter (where d.pm25_daily_mean > 27) as pm25_stations_over_standard
+    from (
+        select
+            naps_id,
+            (observed_at at time zone 'UTC')::date as day,
+            avg(pm25)                          as pm25_daily_mean
+        from {{ ref('int_naps_station_hourly') }}
+        where pm25 is not null
+        group by 1, 2
+        having count(pm25) >= 18               -- at least 75% of the day
+    ) d
+    join {{ ref('int_location_census_division') }} lc
+        on lc.point_type = 'naps' and lc.point_id = d.naps_id
+    group by 1, 2
+),
+
 fire as (
     select
         cduid,
@@ -28,7 +49,8 @@ air as (
         max(aqhi)                              as max_aqhi,
         round(avg(aqhi), 2)                    as mean_aqhi,
         count(*) filter (where risk_category in ('high', 'very_high')) as high_risk_hours,
-        count(distinct location_id)            as aqhi_locations
+        count(distinct location_id)            as aqhi_locations,
+        string_agg(distinct aqhi_source, ',')  as aqhi_sources
     from {{ ref('fct_aqhi_hourly') }}
     group by 1, 2
 ),
@@ -58,7 +80,10 @@ select
     a.max_aqhi,
     a.mean_aqhi,
     coalesce(a.high_risk_hours, 0)             as high_risk_hours,
+    a.aqhi_sources,
     coalesce(s.smoke_report_hours, 0)          as smoke_report_hours,
+    p.pm25_max_station_daily_mean,
+    coalesce(p.pm25_stations_over_standard, 0) > 0 as pm25_over_standard,
     case when a.high_risk_hours > 0 then cd.population_2021 else 0 end
                                                as population_exposed_high_risk
 from {{ ref('dim_census_division') }} cd
@@ -66,3 +91,4 @@ cross join days d
 left join fire f  on f.cduid = cd.cduid and f.day = d.day
 left join air a   on a.cduid = cd.cduid and a.day = d.day
 left join smoke s on s.cduid = cd.cduid and s.day = d.day
+left join pm p    on p.cduid = cd.cduid and p.day = d.day

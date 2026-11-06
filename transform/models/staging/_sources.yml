@@ -15,6 +15,10 @@ sources:
         description: ECCC AQHI forecasts (hourly and named-period records).
       - name: eccc_climate_hourly
         description: ECCC hourly climate observations for all stations.
+      - name: naps_hourly
+        description: NAPS continuous hourly archive, one row per pollutant x method x station x local date (h01..h24 text).
+      - name: naps_stations
+        description: NAPS station list (all text).
       - name: statcan_census_divisions
         description: 2021 census division cartographic boundaries, EPSG:3347.
       - name: statcan_provinces

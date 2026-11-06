@@ -62,6 +62,25 @@ models:
               arguments:
                 values: ["NL", "PE", "NS", "NB", "QC", "ON", "MB", "SK", "AB", "BC", "YT", "NT", "NU"]  # quoted: bare ON is YAML true
 
+  - name: stg_naps__stations
+    columns:
+      - name: naps_id
+        data_tests: [unique, not_null]
+      - name: utc_offset_hours
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [-8, -7, -6, -5, -4, -3.5]
+
+  - name: stg_naps__hourly
+    description: NAPS values, one row per pollutant x method x station x UTC hour.
+    columns:
+      - name: observed_at
+        data_tests: [not_null]
+      - name: value
+        data_tests: [non_negative]
+
   - name: stg_statcan__census_divisions
     columns:
       - name: cduid

@@ -25,6 +25,21 @@ models:
                 to: ref('dim_census_division')
                 field: cduid
 
+  - name: int_naps_station_hourly
+    description: One row per NAPS station per UTC hour (PM2.5, O3, NO2), best method per pollutant.
+    data_tests:
+      - unique:
+          column_name: "naps_id || '|' || observed_at::text"
+
+  - name: int_naps_aqhi_hourly
+    description: AQHI computed from NAPS 3-hour rolling means (Health Canada formula).
+    data_tests:
+      - unique:
+          column_name: "naps_id || '|' || observed_at::text"
+    columns:
+      - name: aqhi
+        data_tests: [not_null, non_negative]
+
   - name: fct_hotspots
     description: Canadian satellite hotspots, one per detection, with census division.
     columns:
@@ -38,7 +53,7 @@ models:
                 field: cduid
 
   - name: fct_aqhi_hourly
-    description: Hourly AQHI observations with census division and risk category.
+    description: Hourly AQHI (ECCC observed + NAPS computed) with census division and risk category.
     data_tests:
       - unique:
           column_name: "location_id || '|' || observed_at::text"
@@ -48,6 +63,11 @@ models:
           - accepted_values:
               arguments:
                 values: ["low", "moderate", "high", "very_high"]
+      - name: aqhi_source
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["eccc_observed", "naps_computed"]
 
   - name: fct_daily_exposure
     description: Census division x UTC day fire activity, air quality and population exposure.

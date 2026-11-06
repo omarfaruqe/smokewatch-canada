@@ -1,4 +1,4 @@
--- Assigns every AQHI community and weather station to a census division: the division that
+-- Assigns every AQHI community, NAPS station and weather station to a census division: the division that
 -- contains the point, or the nearest one for points just offshore (distance_m > 0).
 with points as (
     (select distinct on (location_id)
@@ -12,6 +12,9 @@ with points as (
     from {{ ref('stg_eccc__weather_hourly') }}
     where geom is not null
     order by climate_id, observed_at desc)
+    union all
+    select 'naps'::text, naps_id, ST_Transform(geom, 3347)
+    from {{ ref('stg_naps__stations') }}
 )
 
 select
