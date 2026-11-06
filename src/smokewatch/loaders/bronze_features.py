@@ -93,6 +93,26 @@ def _ensure_table(conn, table: str) -> None:
     conn.execute(text(f"CREATE INDEX IF NOT EXISTS {table}_geom_idx ON raw.{table} USING gist (geom)"))
 
 
+def _copy_features(conn, table: str, partition: str, rows: list[dict]) -> None:
+    """COPY rows into a temp table as text, then convert to jsonb/PostGIS in one statement.
+
+    Orders of magnitude faster than row-by-row INSERTs for large backfills.
+    """
+    cur = conn.connection.driver_connection.cursor()
+    cur.execute("CREATE TEMP TABLE IF NOT EXISTS _feature_stage "
+                "(feature_id text, properties text, geom text) ON COMMIT DROP")
+    with cur.copy("COPY _feature_stage (feature_id, properties, geom) FROM STDIN") as cp:
+        for r in rows:
+            cp.write_row((r["feature_id"], r["properties"], r["geom"]))
+    cur.execute(
+        f"INSERT INTO raw.{table} (partition, feature_id, properties, geom) "
+        "SELECT %s, feature_id, properties::jsonb, "
+        "ST_SetSRID(ST_GeomFromGeoJSON(geom), 4326) FROM _feature_stage",
+        (partition,),
+    )
+    cur.execute("TRUNCATE _feature_stage")
+
+
 def load_dataset(
     store: BronzeStore, dataset: str, engine: Engine | None = None, force: bool = False
 ) -> dict[str, int]:
@@ -115,10 +135,7 @@ def load_dataset(
         with engine.begin() as conn:
             conn.execute(text(f"DELETE FROM raw.{table} WHERE partition = :p"), {"p": p.folder})
             if rows:
-                conn.execute(text(f"""
-                    INSERT INTO raw.{table} (partition, feature_id, properties, geom)
-                    VALUES (:partition, :feature_id, CAST(:properties AS jsonb),
-                            ST_SetSRID(ST_GeomFromGeoJSON(:geom), 4326))"""), rows)
+                _copy_features(conn, table, p.folder, rows)
             conn.execute(text("""
                 INSERT INTO raw._load_log (dataset, partition, sha256, row_count)
                 VALUES (:d, :p, :s, :n)
