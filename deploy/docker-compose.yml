@@ -1,13 +1,21 @@
 # Server deployment (snapshot mode): Postgres + PostGIS holding the `marts` schema, and the API
 # with the dashboard. Both bind to 127.0.0.1 only; the gateway Caddy publishes /smokewatch/.
 #
-#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
+# The server also runs other workloads, so both containers are capped (CPU, memory) and
+# Postgres runs without parallel query workers. The API image can be built elsewhere and
+# loaded (scripts/ship_image.sh), so the server never has to build it.
+#
+#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --no-build
 name: smokewatch
 
 services:
   db:
     image: postgis/postgis:16-3.4
     restart: unless-stopped
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_parallel_workers_per_gather=0",
+              "-c", "max_parallel_maintenance_workers=0", "-c", "maintenance_work_mem=128MB"]
+    cpus: ${DB_CPUS:-1.0}
+    mem_limit: ${DB_MEM_LIMIT:-1g}
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -24,10 +32,13 @@ services:
       retries: 5
 
   api:
+    image: smokewatch-api:latest
     build:
       context: ..
       dockerfile: deploy/Dockerfile
     restart: unless-stopped
+    cpus: ${API_CPUS:-0.5}
+    mem_limit: ${API_MEM_LIMIT:-512m}
     depends_on:
       db:
         condition: service_healthy
