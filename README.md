@@ -12,6 +12,8 @@ Canadian provinces and territories, and estimates daily population exposure to p
 | CWFIS hotspots (WFS) | Natural Resources Canada | Satellite-detected fire hotspots | Daily |
 | CWFIS fire perimeters | Natural Resources Canada | Current fire perimeters, snapshotted daily for SCD2 history | Daily |
 | MSC GeoMet / Datamart | Environment and Climate Change Canada | AQHI observations and forecasts, weather | Hourly |
+| NAPS archive | Environment and Climate Change Canada | Hourly PM2.5, O3, NO2 by station (historical AQHI computed from these) | Yearly |
+| CWFIS perimeter archive | Natural Resources Canada | Final fire perimeters of past seasons | Yearly |
 | Census 2021 | Statistics Canada | Census division and province boundaries, population (table 98-10-0007-01) | Static |
 
 ## Architecture (target)
@@ -45,6 +47,20 @@ smokewatch load features                 # bronze -> raw, only changed partition
 set -a && source .env && set +a && dbt build --project-dir transform --profiles-dir transform
 ```
 
+## 2023 season backfill
+
+```bash
+smokewatch hotspots --sink s3 --start 2023-05-01 --end 2023-09-30   # 3.29 M detections
+smokewatch weather  --sink s3 --start 2023-05-01 --end 2023-09-30   # 3.27 M hourly records
+smokewatch naps --year 2023 --sink s3                               # PM2.5, O3, NO2 + stations
+smokewatch perimeters --season 2023 --sink s3                       # 1,144 final perimeters
+smokewatch load features && smokewatch load naps && smokewatch load season-perimeters
+```
+
+Validated against known events: computed AQHI of 15-17 in Montreal on 2023-06-25, Quebec's
+hotspot peak in June, the Northwest Territories' in August, and 16.0 M ha of season perimeters
+nationally. See `docs/sources/` for each source's profile and caveats.
+
 ## Orchestration (Dagster)
 
 ```bash
@@ -76,7 +92,7 @@ export DAGSTER_HOME="$PWD/.dagster" && dagster dev   # UI at http://localhost:30
 - [x] Sprint 3 — Census boundaries and population in PostGIS
 - [x] Sprint 4 — dbt models, spatial joins, SCD2 fire tracking
 - [x] Sprint 5 — Orchestration and data quality
-- [ ] Sprint 6 — Historical backfill (2023 season)
+- [x] Sprint 6 — Historical backfill (2023 season)
 - [ ] Sprint 7 — API and map dashboard
 - [ ] Sprint 8 — CI/CD, docs, bilingual README
 
