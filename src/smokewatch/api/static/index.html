@@ -21,7 +21,7 @@
   .controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .controls input[type=range] { flex:1; min-width:140px; }
   .date { font-size:20px; font-weight:600; }
-  .stats { display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; }
+  .stats { display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; }
   .stat { border:1px solid var(--line); border-radius:8px; padding:8px; }
   .stat b { display:block; font-size:18px; }
   .stat small { color:var(--muted); font-size:11px; }
@@ -55,6 +55,7 @@
       <div class="date" id="dateLabel">–</div>
     </div>
     <div class="stats">
+      <div class="stat"><b id="sExposedDa">–</b><small data-i18n="exposedDa"></small></div>
       <div class="stat"><b id="sExposed">–</b><small data-i18n="exposed"></small></div>
       <div class="stat"><b id="sHotspots">–</b><small data-i18n="hotspots"></small></div>
       <div class="stat"><b id="sAqhi">–</b><small data-i18n="peakAqhi"></small></div>
@@ -84,26 +85,28 @@
 const T = {
   en: {
     tagline: "Wildfires, smoke and population exposure across Canada",
-    exposed: "people in divisions with high-risk air", hotspots: "satellite hotspots", peakAqhi: "peak AQHI",
+    exposed: "upper bound (whole divisions)", exposedDa: "people near a high-risk station", hotspots: "satellite hotspots", peakAqhi: "peak AQHI",
     seasonChart: "Population exposed (millions)", layers: "Layers", legend: "Daily peak AQHI",
     lyrAqhi: "Census divisions by peak AQHI", lyrHot: "Satellite hotspots", lyrPerim: "2023 final fire perimeters",
     noData: "no AQHI station",
     legendNote: "Uncoloured divisions have no AQHI station: no data, not clean air.", pop: "Population (2021)", fires: "Hotspots", hours: "High-risk hours",
-    pm25: "PM2.5 daily mean (max station)", exposedPop: "Counted as exposed",
+    pm25: "PM2.5 daily mean (max station)", exposedPop: "Exposed, upper bound", exposedDaPop: "Exposed, nearest station",
+    lineDa: "Nearest-station estimate", lineCd: "Upper bound (whole divisions)",
     season2023: "2023 fire season", recent: "Recent days",
-    method: "Exposure is estimated per 2021 census division: if any AQHI location in a division had a high-risk hour (rounded AQHI 7+) that UTC day, its whole population is counted. Totals are upper bounds. 2023 AQHI is computed from NAPS measurements with Health Canada's formula; recent AQHI is ECCC's published value.",
+    method: "Two estimates of people exposed to high-risk air (rounded AQHI 7+ during a UTC day). Nearest station: each 2021 dissemination area counts when its nearest AQHI location within 50 km is high risk; areas farther away are not covered. Upper bound: a census division's whole population counts once any of its locations is high risk. 2023 AQHI is computed from NAPS measurements with Health Canada's formula; recent AQHI is ECCC's published value.",
     sources: "Data: Natural Resources Canada (CWFIS), Environment and Climate Change Canada (AQHI, NAPS, climate), Statistics Canada (2021 Census). Open Government Licence – Canada.",
   },
   fr: {
     tagline: "Feux de forêt, fumée et exposition de la population au Canada",
-    exposed: "personnes dans des divisions à risque élevé", hotspots: "points chauds satellitaires", peakAqhi: "CAS maximale",
+    exposed: "borne supérieure (divisions entières)", exposedDa: "personnes près d'une station à risque élevé", hotspots: "points chauds satellitaires", peakAqhi: "CAS maximale",
     seasonChart: "Population exposée (millions)", layers: "Couches", legend: "Cote air santé (CAS) maximale du jour",
     lyrAqhi: "Divisions de recensement selon la CAS", lyrHot: "Points chauds satellitaires", lyrPerim: "Périmètres finaux des feux 2023",
     noData: "aucune station CAS",
     legendNote: "Les divisions non colorées n'ont aucune station CAS : absence de données, pas air pur.", pop: "Population (2021)", fires: "Points chauds", hours: "Heures à risque élevé",
-    pm25: "PM2,5 moyenne quotidienne (station max.)", exposedPop: "Comptée comme exposée",
+    pm25: "PM2,5 moyenne quotidienne (station max.)", exposedPop: "Exposée, borne supérieure", exposedDaPop: "Exposée, station la plus proche",
+    lineDa: "Estimation par station la plus proche", lineCd: "Borne supérieure (divisions entières)",
     season2023: "Saison des feux 2023", recent: "Jours récents",
-    method: "L'exposition est estimée par division de recensement 2021 : si un lieu de mesure de la CAS d'une division a connu une heure à risque élevé (CAS arrondie de 7 ou plus) ce jour-là (UTC), toute sa population est comptée. Les totaux sont des bornes supérieures. La CAS de 2023 est calculée à partir des mesures du SNPA selon la formule de Santé Canada; la CAS récente est la valeur publiée par ECCC.",
+    method: "Deux estimations de la population exposée à un air à risque élevé (CAS arrondie de 7 ou plus pendant un jour UTC). Station la plus proche : chaque aire de diffusion de 2021 est comptée lorsque le lieu de mesure de la CAS le plus proche, à moins de 50 km, est à risque élevé; les aires plus éloignées ne sont pas couvertes. Borne supérieure : toute la population d'une division est comptée dès qu'un de ses lieux est à risque élevé. La CAS de 2023 est calculée à partir des mesures du SNPA selon la formule de Santé Canada; la CAS récente est la valeur publiée par ECCC.",
     sources: "Données : Ressources naturelles Canada (SCIFV), Environnement et Changement climatique Canada (CAS, SNPA, climat), Statistique Canada (Recensement de 2021). Licence du gouvernement ouvert – Canada.",
   },
 };
@@ -120,7 +123,7 @@ function applyLang() {
   document.getElementById("lang").textContent = lang === "en" ? "FR" : "EN";
   const s = document.getElementById("season");
   s.options[0].text = t("season2023"); s.options[1].text = t("recent");
-  if (chart) { chart.data.datasets[0].label = t("seasonChart"); chart.update(); }
+  if (chart) { chart.data.datasets[0].label = t("lineDa"); chart.data.datasets[1].label = t("lineCd"); chart.update(); }
   if (days.length) showDay(idx, false);
 }
 
@@ -168,7 +171,7 @@ map.on("load", async () => {
       `<b>${p.name}</b>, ${prov}<br>${t("peakAqhi")}: ${aq}<br>${t("hours")}: ${fmt(p.high_risk_hours)}` +
       `<br>${t("pm25")}: ${p.pm25 && p.pm25 !== "null" ? fmt(p.pm25, 1) + " µg/m³" : "–"}` +
       `<br>${t("fires")}: ${fmt(p.hotspots)}<br>${t("pop")}: ${fmt(p.population)}` +
-      `<br>${t("exposedPop")}: ${fmt(p.exposed)}`).addTo(map);
+      `<br>${t("exposedDaPop")}: ${fmt(p.exposed_da)}<br>${t("exposedPop")}: ${fmt(p.exposed)}`).addTo(map);
   });
   map.on("mouseenter", "cd-fill", () => map.getCanvas().style.cursor = "pointer");
   map.on("mouseleave", "cd-fill", () => map.getCanvas().style.cursor = "");
@@ -206,13 +209,16 @@ async function loadSeason(start, end, focus) {
 }
 
 function drawChart() {
-  const data = days.map(d => (exposureByDay[d]?.population_exposed_high_risk ?? 0) / 1e6);
+  const series = k => days.map(d => (exposureByDay[d]?.[k] ?? 0) / 1e6);
   if (chart) chart.destroy();
   chart = new Chart(document.getElementById("chart"), {
     type: "line",
-    data: { labels: days.map(d => d.slice(5)), datasets: [{ label: t("seasonChart"), data,
-      borderColor: "#b8401c", backgroundColor: "rgba(184,64,28,.12)", fill: true, pointRadius: 0, borderWidth: 1.5 }] },
-    options: { animation: false, plugins: { legend: { display: false } },
+    data: { labels: days.map(d => d.slice(5)), datasets: [
+      { label: t("lineDa"), data: series("population_exposed_high_risk_da"),
+        borderColor: "#b8401c", backgroundColor: "rgba(184,64,28,.15)", fill: true, pointRadius: 0, borderWidth: 1.5 },
+      { label: t("lineCd"), data: series("population_exposed_high_risk"),
+        borderColor: "#8a8f96", borderDash: [4, 3], fill: false, pointRadius: 0, borderWidth: 1 }] },
+    options: { animation: false, plugins: { legend: { display: true, labels: { boxWidth: 10, font: { size: 10 } } } },
       scales: { x: { ticks: { maxTicksLimit: 6 } }, y: { beginAtZero: true } },
       onClick: (_, els) => els.length && showDay(els[0].index) },
     plugins: [{ id: "cursor", afterDraw(c) {
@@ -229,7 +235,9 @@ async function showDay(i, fetchMap = true) {
   document.getElementById("dateLabel").textContent =
     new Date(day + "T12:00:00Z").toLocaleDateString(lang === "fr" ? "fr-CA" : "en-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
   const s = exposureByDay[day] || {};
-  document.getElementById("sExposed").textContent = s.population_exposed_high_risk ? fmt(s.population_exposed_high_risk / 1e6, 1) + " M" : "0";
+  const millions = v => v ? fmt(v / 1e6, 1) + " M" : "0";
+  document.getElementById("sExposedDa").textContent = millions(s.population_exposed_high_risk_da);
+  document.getElementById("sExposed").textContent = millions(s.population_exposed_high_risk);
   document.getElementById("sHotspots").textContent = fmt(s.hotspots ?? 0);
   document.getElementById("sAqhi").textContent = fmt(s.peak_aqhi, 1);
   if (chart) chart.draw();

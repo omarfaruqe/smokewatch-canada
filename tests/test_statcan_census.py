@@ -18,3 +18,21 @@ from smokewatch.loaders.statcan_census import clean_column  # noqa: E402
 ])
 def test_clean_column(raw, clean):
     assert clean_column(raw) == clean
+
+
+def test_read_geo_attributes_keeps_codes_and_handles_latin1():
+    import io
+    import zipfile
+
+    from smokewatch.loaders.statcan_census import GEO_ATTRIBUTE_COLUMNS, read_geo_attributes
+
+    header = ",".join(["PRNAME_PRNOM", *GEO_ATTRIBUTE_COLUMNS])
+    row = ",".join(["Québec", "24", "2466", "24660001", "7629000.1", "1240000.2",
+                    "45.5", "-73.6", "24660001001", "57"])
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("2021_92-151_X.csv", (header + "\n" + row + "\n").encode("latin-1"))
+    df = read_geo_attributes(buf.getvalue())
+    assert list(df.columns) == list(GEO_ATTRIBUTE_COLUMNS.values())
+    r = df.iloc[0]
+    assert r["dauid"] == "24660001" and r["cduid"] == "2466" and r["db_pop_2021"] == "57"

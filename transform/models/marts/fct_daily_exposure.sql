@@ -21,6 +21,10 @@
 -- Exposure is estimated at census-division level: if any AQHI community in the division
 -- reached a high-risk hour (rounded AQHI >= 7) that day, the division's 2021 population counts as
 -- exposed. Divisions with no AQHI community have aqhi_coverage = false and null AQHI metrics.
+-- population_exposed_high_risk_da is the finer estimate: dissemination areas count as
+-- exposed when their nearest AQHI location (within da_station_max_km) had a high-risk hour.
+-- Per day the larger of the ECCC-based and NAPS-based figures is used, so a population is
+-- never counted twice. population_aqhi_covered_da is the population with a location in range.
 with days as (
     select day from (
         select detected_date_utc as day from {{ ref('fct_hotspots') }}
@@ -79,6 +83,40 @@ air as (
     group by 1, 2
 ),
 
+loc_day as (
+    select
+        aqhi_source,
+        location_id,
+        observed_date_utc                      as day,
+        bool_or(risk_category in ('high', 'very_high')) as high_risk
+    from {{ ref('fct_aqhi_hourly') }}
+    where observed_date_utc >= {{ since }}
+    group by 1, 2, 3
+),
+
+loc_pop as (
+    select aqhi_source, location_id, cduid, sum(population_2021) as population
+    from {{ ref('int_da_aqhi_location') }}
+    group by 1, 2, 3
+),
+
+da as (
+    select cduid, day, max(exposed) as exposed_da, max(covered) as covered_da
+    from (
+        select
+            lp.cduid,
+            ld.day,
+            lp.aqhi_source,
+            coalesce(sum(lp.population) filter (where ld.high_risk), 0) as exposed,
+            sum(lp.population)                 as covered
+        from loc_pop lp
+        join loc_day ld
+            on ld.aqhi_source = lp.aqhi_source and ld.location_id = lp.location_id
+        group by 1, 2, 3
+    ) by_source
+    group by 1, 2
+),
+
 smoke as (
     select
         lc.cduid,
@@ -110,10 +148,13 @@ select
     p.pm25_max_station_daily_mean,
     coalesce(p.pm25_stations_over_standard, 0) > 0 as pm25_over_standard,
     case when a.high_risk_hours > 0 then cd.population_2021 else 0 end
-                                               as population_exposed_high_risk
+                                               as population_exposed_high_risk,
+    coalesce(da.exposed_da, 0)::bigint         as population_exposed_high_risk_da,
+    coalesce(da.covered_da, 0)::bigint         as population_aqhi_covered_da
 from {{ ref('dim_census_division') }} cd
 cross join days d
 left join fire f  on f.cduid = cd.cduid and f.day = d.day
 left join air a   on a.cduid = cd.cduid and a.day = d.day
 left join smoke s on s.cduid = cd.cduid and s.day = d.day
 left join pm p    on p.cduid = cd.cduid and p.day = d.day
+left join da      on da.cduid = cd.cduid and da.day = d.day

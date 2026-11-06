@@ -40,6 +40,18 @@ models:
       - name: aqhi
         data_tests: [not_null, non_negative]
 
+  - name: int_aqhi_locations
+    description: All AQHI-reporting locations (ECCC observed, NAPS computed) as points.
+    data_tests:
+      - unique:
+          column_name: "aqhi_source || '|' || location_id"
+
+  - name: int_da_aqhi_location
+    description: Nearest AQHI location per source for each dissemination area, within the cap.
+    data_tests:
+      - unique:
+          column_name: "dauid || '|' || aqhi_source"
+
   - name: fct_hotspots
     description: Canadian satellite hotspots, one per detection, with census division.
     columns:
@@ -76,6 +88,8 @@ models:
           column_name: "cduid || '|' || day::text"
     columns:
       - name: population_exposed_high_risk
+        data_tests: [non_negative]
+      - name: population_exposed_high_risk_da
         data_tests: [non_negative]
 
   - name: dim_fire_perimeter_history

@@ -32,9 +32,12 @@ app = FastAPI(
         "Wildfires, smoke and population exposure across Canada, built from open data by "
         "Natural Resources Canada, Environment and Climate Change Canada and Statistics "
         "Canada (Open Government Licence - Canada).\n\n"
-        "Exposure is estimated per 2021 census division: if any AQHI location in the division "
-        "had a high-risk hour (rounded AQHI >= 7) that UTC day, its population counts as "
-        "exposed. Treat totals as upper bounds."
+        "Two exposure estimates are provided. `population_exposed_high_risk` (upper bound): a "
+        "2021 census division's whole population counts once any of its AQHI locations has a "
+        "high-risk hour (rounded AQHI >= 7) that UTC day. `population_exposed_high_risk_da` "
+        "(nearest station): each 2021 dissemination area counts when its nearest AQHI "
+        "location within 50 km has a high-risk hour; `population_aqhi_covered_da` is the "
+        "population within range of a location."
     ),
 )
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])

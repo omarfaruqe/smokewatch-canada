@@ -26,6 +26,10 @@ BOUNDARY_BASE = (
     "files-fichiers"
 )
 TABLE_BASE = "https://www150.statcan.gc.ca/n1/tbl/csv"
+ATTRIBUTE_BASE = (
+    "https://www12.statcan.gc.ca/census-recensement/2021/geo/aip-pia/attribute-fichiers/"
+    "files-fichiers"
+)
 
 # name -> (url, bronze key, description)
 FILES: dict[str, tuple[str, str, str]] = {
@@ -38,6 +42,12 @@ FILES: dict[str, tuple[str, str, str]] = {
         f"{BOUNDARY_BASE}/lpr_000b21a_e.zip",
         "statcan/census2021/boundaries/lpr_000b21a_e.zip",
         "Provinces and territories, cartographic boundary file, 2021, Shapefile, EPSG:3347",
+    ),
+    "geo_attributes": (
+        f"{ATTRIBUTE_BASE}/2021_92-151_X.zip",
+        "statcan/census2021/attributes/2021_92-151_X.zip",
+        "Geographic Attribute File 92-151-X: dissemination blocks with 2021 population and "
+        "dissemination area representative points",
     ),
     "population_cd": (
         f"{TABLE_BASE}/98100007-eng.zip",

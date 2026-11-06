@@ -44,6 +44,8 @@ def national_daily(conn: Connection, start: date, end: date) -> list[dict]:
         select
             day,
             sum(population_exposed_high_risk)::bigint as population_exposed_high_risk,
+            sum(population_exposed_high_risk_da)::bigint as population_exposed_high_risk_da,
+            sum(population_aqhi_covered_da)::bigint as population_aqhi_covered_da,
             sum(hotspot_count)::bigint                                  as hotspots,
             max(max_aqhi)                                               as peak_aqhi,
             count(*) filter (where population_exposed_high_risk > 0)    as divisions_exposed,
@@ -62,7 +64,8 @@ def division_exposure(conn: Connection, day: date, province: str | None) -> list
             e.cduid, e.cd_name, e.province_code, d.province_name_en, d.province_name_fr,
             e.population_2021, e.hotspot_count, e.total_frp_mw, e.aqhi_coverage, e.max_aqhi,
             e.mean_aqhi, e.high_risk_hours, e.pm25_max_station_daily_mean, e.pm25_over_standard,
-            e.smoke_report_hours, e.population_exposed_high_risk
+            e.smoke_report_hours, e.population_exposed_high_risk,
+            e.population_exposed_high_risk_da, e.population_aqhi_covered_da
         from marts.fct_daily_exposure e
         join marts.dim_census_division d using (cduid)
         where e.day = :day and (cast(:province as text) is null or e.province_code = :province)
@@ -81,7 +84,9 @@ def division_geojson(conn: Connection, day: date) -> dict:
                 'max_aqhi', e.max_aqhi, 'high_risk_hours', coalesce(e.high_risk_hours, 0),
                 'aqhi_coverage', coalesce(e.aqhi_coverage, false),
                 'pm25', e.pm25_max_station_daily_mean,
-                'exposed', coalesce(e.population_exposed_high_risk, 0)
+                'exposed', coalesce(e.population_exposed_high_risk, 0),
+                'exposed_da', coalesce(e.population_exposed_high_risk_da, 0),
+                'covered_da', coalesce(e.population_aqhi_covered_da, 0)
             ) as properties
         from marts.dim_census_division d
         left join marts.fct_daily_exposure e on e.cduid = d.cduid and e.day = :day

@@ -90,6 +90,21 @@ models:
       - name: geom_3347
         data_tests: [not_null, valid_geometry]
 
+  - name: stg_statcan__dissemination_areas
+    description: 2021 dissemination areas with population (summed from blocks) and point.
+    columns:
+      - name: dauid
+        data_tests: [unique, not_null]
+      - name: cduid
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_statcan__census_divisions')
+                field: cduid
+      - name: geom_3347
+        data_tests: [not_null]
+
   - name: stg_statcan__provinces
     columns:
       - name: pruid
