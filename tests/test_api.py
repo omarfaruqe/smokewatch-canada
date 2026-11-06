@@ -65,3 +65,9 @@ def test_hotspot_limit_bounds(client):
 def test_unknown_fire_history_is_404(client):
     c, _ = client
     assert c.get("/fires/nope/history").status_code == 404
+
+
+def test_dashboard_is_served(client):
+    c, _ = client
+    r = c.get("/")
+    assert r.status_code == 200 and "SmokeWatch" in r.text and "maplibre" in r.text

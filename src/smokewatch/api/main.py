@@ -4,17 +4,20 @@ Run:  uvicorn smokewatch.api.main:app --reload     (docs at http://localhost:800
 """
 
 from collections.abc import Iterator
+from pathlib import Path
 from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from sqlalchemy import Connection
 
 from smokewatch import __version__
 from smokewatch.api import queries
 from smokewatch.db import get_engine
 
+STATIC = Path(__file__).parent / "static"
 Province = Literal["NL", "PE", "NS", "NB", "QC", "ON", "MB", "SK", "AB", "BC", "YT", "NT", "NU"]
 MAX_RANGE_DAYS = 400
 
@@ -39,6 +42,12 @@ def get_conn() -> Iterator[Connection]:
 
 
 Conn = Annotated[Connection, Depends(get_conn)]
+
+
+@app.get("/", include_in_schema=False)
+def dashboard() -> FileResponse:
+    """Bilingual map dashboard (single static page that calls this API)."""
+    return FileResponse(STATIC / "index.html")
 
 
 @app.get("/health", tags=["meta"])
