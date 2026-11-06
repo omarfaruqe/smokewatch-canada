@@ -5,7 +5,7 @@
 A national data engineering platform that tracks wildfires, smoke and air quality across all
 Canadian provinces and territories, and estimates daily population exposure to poor air.
 
-**[Version française](README.fr.md)**
+**[Version française](README.fr.md)** · **[dbt docs and lineage](https://omarfaruqe.github.io/smokewatch-canada/)**
 
 ## Data sources
 

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/omarfaruqe/smokewatch-canada/actions/workflows/ci.yml/badge.svg)](https://github.com/omarfaruqe/smokewatch-canada/actions/workflows/ci.yml)
 
-**[English version](README.md)**
+**[English version](README.md)** · **[Documentation dbt et lignage](https://omarfaruqe.github.io/smokewatch-canada/)**
 
 Plateforme d'ingénierie des données à l'échelle nationale qui suit les feux de forêt, la fumée
 et la qualité de l'air dans toutes les provinces et tous les territoires du Canada, et estime
