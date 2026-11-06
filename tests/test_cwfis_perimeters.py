@@ -25,7 +25,8 @@ class FakeWFS:
     def get(self, url, params=None, timeout=None):
         self.calls.append(params)
         feats = [{"type": "Feature", "id": "m3_polygons_current.1",
-                  "geometry": {"type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]]},
+                  "geometry": {"type": "Polygon",
+                               "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]]},
                   "properties": {"hcount": 5, "area": 12.5}}]
         return FakeResponse({"type": "FeatureCollection", "features": feats})
 

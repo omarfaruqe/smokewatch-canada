@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Lint and test (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - name: Install
+        run: uv venv && uv pip install -e ".[dev,api]"
+      - name: Ruff
+        run: .venv/bin/ruff check src tests
+      - name: Pytest
+        run: .venv/bin/pytest -q
+
+  dbt:
+    name: dbt compile and Dagster definitions
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: smokewatch
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: smokewatch
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U smokewatch -d smokewatch"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      POSTGRES_USER: smokewatch
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_DB: smokewatch
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5433"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - name: Install
+        run: uv venv && uv pip install -e ".[dbt,orchestration]"
+      - name: dbt debug (connection and project)
+        run: .venv/bin/dbt debug --project-dir transform --profiles-dir transform
+      - name: dbt parse and compile all models and tests
+        run: |
+          .venv/bin/dbt parse --project-dir transform --profiles-dir transform
+          .venv/bin/dbt compile --project-dir transform --profiles-dir transform
+      - name: Dagster definitions load (uses the dbt manifest)
+        run: .venv/bin/dagster definitions validate -m smokewatch.orchestration.definitions

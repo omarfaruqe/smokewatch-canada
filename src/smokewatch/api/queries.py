@@ -43,7 +43,7 @@ def national_daily(conn: Connection, start: date, end: date) -> list[dict]:
     return _rows(conn, """
         select
             day,
-            sum(population_exposed_high_risk)::bigint                   as population_exposed_high_risk,
+            sum(population_exposed_high_risk)::bigint as population_exposed_high_risk,
             sum(hotspot_count)::bigint                                  as hotspots,
             max(max_aqhi)                                               as peak_aqhi,
             count(*) filter (where population_exposed_high_risk > 0)    as divisions_exposed,

@@ -204,7 +204,9 @@ hourly_air_quality_job = define_asset_job(
 
 daily_pipeline_job = define_asset_job(
     "daily_pipeline",
-    selection=(AssetSelection.groups("bronze") - AssetSelection.assets(bronze_statcan)).downstream(),
+    selection=(
+        AssetSelection.groups("bronze") - AssetSelection.assets(bronze_statcan)
+    ).downstream(),
 )
 
 defs = Definitions(

@@ -58,9 +58,8 @@ def _load_boundary(store: BronzeStore, engine: Engine, name: str) -> int:
 
 def _load_population(store: BronzeStore, engine: Engine) -> int:
     key = FILES["population_cd"][1]
-    with zipfile.ZipFile(io.BytesIO(store.get(key))) as z:
-        with z.open("98100007.csv") as f:
-            df = pd.read_csv(f, dtype=str, encoding="utf-8-sig")
+    with zipfile.ZipFile(io.BytesIO(store.get(key))) as z, z.open("98100007.csv") as f:
+        df = pd.read_csv(f, dtype=str, encoding="utf-8-sig")
     df.columns = [clean_column(c) for c in df.columns]
     df.to_sql("statcan_population_cd", engine, schema="raw", if_exists="replace", index=False)
     log.info("loaded %d rows into raw.statcan_population_cd", len(df))

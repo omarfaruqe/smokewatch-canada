@@ -27,7 +27,7 @@ STATIONS = (
     '"050103","Montréal-Est","-5","2466"\n'
     '"010102","St. John\'s","-3.5","1001"\n'
     '"**********Definitions_Définitions**********",""\n"x","y"\n'
-).encode("utf-8")
+).encode()
 
 
 def test_urls_match_portal_encoding():

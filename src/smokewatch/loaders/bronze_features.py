@@ -89,8 +89,10 @@ def _ensure_table(conn, table: str) -> None:
             geom        geometry(Geometry, 4326),
             loaded_at   timestamptz NOT NULL DEFAULT now()
         )"""))
-    conn.execute(text(f"CREATE INDEX IF NOT EXISTS {table}_partition_idx ON raw.{table} (partition)"))
-    conn.execute(text(f"CREATE INDEX IF NOT EXISTS {table}_geom_idx ON raw.{table} USING gist (geom)"))
+    conn.execute(text(
+        f"CREATE INDEX IF NOT EXISTS {table}_partition_idx ON raw.{table} (partition)"))
+    conn.execute(text(
+        f"CREATE INDEX IF NOT EXISTS {table}_geom_idx ON raw.{table} USING gist (geom)"))
 
 
 def _copy_features(conn, table: str, partition: str, rows: list[dict]) -> None:

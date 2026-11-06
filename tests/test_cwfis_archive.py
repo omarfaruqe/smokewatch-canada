@@ -31,7 +31,8 @@ def test_downloads_once_then_skips(tmp_path):
     key, size, skipped = cwfis_archive.fetch_season_perimeters(store, 2023, session=s)
     assert key == "cwfis/perimeters_archive/year=2023/2023_perimeters.zip" and not skipped
     assert s.urls == [f"{cwfis_archive.ARCHIVE_URL}/2023_perimeters.zip"]
-    assert json.loads(store.get("cwfis/perimeters_archive/year=2023/_manifest.json"))["year"] == 2023
+    manifest = json.loads(store.get("cwfis/perimeters_archive/year=2023/_manifest.json"))
+    assert manifest["year"] == 2023
     _, _, skipped = cwfis_archive.fetch_season_perimeters(store, 2023, session=s)
     assert skipped and len(s.urls) == 1
 

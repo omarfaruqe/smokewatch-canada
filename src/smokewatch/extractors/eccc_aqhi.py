@@ -79,7 +79,8 @@ def observations_range(
 ) -> list[PartitionResult]:
     results, day = [], start
     while day <= end:
-        if not (skip_existing and store.exists(f"eccc/{OBS}/date={day.isoformat()}/_manifest.json")):
+        manifest = f"eccc/{OBS}/date={day.isoformat()}/_manifest.json"
+        if not (skip_existing and store.exists(manifest)):
             results.append(observations(store, day, session=session))
         day += timedelta(days=1)
     return results

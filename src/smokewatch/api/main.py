@@ -4,8 +4,8 @@ Run:  uvicorn smokewatch.api.main:app --reload     (docs at http://localhost:800
 """
 
 from collections.abc import Iterator
-from pathlib import Path
 from datetime import date
+from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query

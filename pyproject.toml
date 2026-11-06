@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.5"]
+dev = ["pytest>=8.0", "ruff==0.17.4", "httpx>=0.27"]
 dbt = ["dbt-core==1.12.6", "dbt-postgres==1.11.0"]
 api = ["fastapi==0.115.12", "uvicorn[standard]==0.34.2"]
 orchestration = [
@@ -47,6 +47,10 @@ code_location_name = "smokewatch"
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, pyupgrade, bugbear, simplify
+select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

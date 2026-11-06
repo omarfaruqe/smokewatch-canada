@@ -35,7 +35,9 @@ def load(store: BronzeStore, engine: Engine | None = None, force: bool = False) 
         exists = conn.execute(text("SELECT to_regclass(:t)"), {"t": f"raw.{TABLE}"}).scalar()
 
     stats = {"seasons_loaded": 0, "skipped": 0, "rows": 0}
-    folders = sorted({k.rsplit("/", 1)[0] for k in store.list(PREFIX) if k.endswith("_manifest.json")})
+    folders = sorted(
+        {k.rsplit("/", 1)[0] for k in store.list(PREFIX) if k.endswith("_manifest.json")}
+    )
     for folder in folders:
         manifest = json.loads(store.get(f"{folder}/_manifest.json"))
         if not force and done.get(folder) == manifest["sha256"]:

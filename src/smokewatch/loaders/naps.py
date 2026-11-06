@@ -75,10 +75,10 @@ def parse_stations(data: bytes) -> pd.DataFrame:
 def _copy_rows(conn, df: pd.DataFrame) -> None:
     """Bulk-insert with Postgres COPY (much faster than multi-row INSERTs)."""
     cols = ["partition", *HOURLY_COLUMNS]
-    with conn.connection.driver_connection.cursor() as cur:
-        with cur.copy(f"COPY raw.naps_hourly ({', '.join(cols)}) FROM STDIN") as cp:
-            for row in df[cols].itertuples(index=False, name=None):
-                cp.write_row(row)
+    cur = conn.connection.driver_connection.cursor()
+    with cur, cur.copy(f"COPY raw.naps_hourly ({', '.join(cols)}) FROM STDIN") as cp:
+        for row in df[cols].itertuples(index=False, name=None):
+            cp.write_row(row)
 
 
 def _done(conn, dataset: str) -> dict[str, str]:
