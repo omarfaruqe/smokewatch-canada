@@ -24,12 +24,12 @@ class FakeStream:
 
 
 class FakeSession:
-    def __init__(self):
-        self.headers, self.urls = {}, []
+    def __init__(self, body=None):
+        self.headers, self.urls, self.body = {}, [], body
 
     def get(self, url, stream=False, timeout=None):
         self.urls.append(url)
-        return FakeStream(b"PK-fake-" + url.encode())
+        return FakeStream(self.body or (b"PK-fake-" + url.encode()))
 
 
 def test_fetch_writes_file_and_manifest(tmp_path):
@@ -50,3 +50,12 @@ def test_fetch_skips_existing_unless_forced(tmp_path):
     assert r.skipped and s.urls == []
     [r] = statcan.fetch(store, ["provinces"], force=True, session=s)
     assert not r.skipped and len(s.urls) == 1
+
+
+def test_fetch_rejects_html_instead_of_zip(tmp_path):
+    import pytest
+
+    store = LocalStore(tmp_path)
+    with pytest.raises(RuntimeError, match="did not return a zip"):
+        statcan.fetch(store, ["geo_attributes"], session=FakeSession(b"<!DOCTYPE html>"))
+    assert not store.exists("statcan/census2021/attributes/2021_92-151_X_manifest.json")

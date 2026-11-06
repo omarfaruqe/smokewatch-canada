@@ -27,7 +27,7 @@ BOUNDARY_BASE = (
 )
 TABLE_BASE = "https://www150.statcan.gc.ca/n1/tbl/csv"
 ATTRIBUTE_BASE = (
-    "https://www12.statcan.gc.ca/census-recensement/2021/geo/aip-pia/attribute-fichiers/"
+    "https://www12.statcan.gc.ca/census-recensement/2021/geo/aip-pia/attribute-attribs/"
     "files-fichiers"
 )
 
@@ -95,6 +95,8 @@ def fetch(
             results.append(DownloadResult(name, key, 0, "", True))
             continue
         data = _download(session, url)
+        if key.endswith(".zip") and data[:2] != b"PK":
+            raise RuntimeError(f"{url} did not return a zip archive (got {data[:60]!r})")
         digest = hashlib.sha256(data).hexdigest()
         store.put(key, data, content_type="application/zip")
         put_json(store, manifest_key, {
