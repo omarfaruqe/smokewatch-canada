@@ -12,10 +12,10 @@ concurrency:
 jobs:
   python:
     name: Lint and test (Python)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
       - name: Install
@@ -27,7 +27,7 @@ jobs:
 
   dbt:
     name: dbt compile and Dagster definitions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgis/postgis:16-3.4
@@ -46,12 +46,14 @@ jobs:
       POSTGRES_HOST: localhost
       POSTGRES_PORT: "5433"
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
       - name: Install
-        run: uv venv && uv pip install -e ".[dbt,orchestration]"
+        run: |
+          uv venv && uv pip install -e ".[dbt,orchestration]"
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: dbt debug (connection and project)
         run: .venv/bin/dbt debug --project-dir transform --profiles-dir transform
       - name: dbt parse and compile all models and tests

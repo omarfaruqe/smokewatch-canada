@@ -13,6 +13,8 @@ Note: no `from __future__ import annotations` here. Dagster inspects the real ty
 """
 
 import re
+import shutil
+import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -51,6 +53,11 @@ from smokewatch.storage import get_store
 REPO_ROOT = Path(__file__).resolve().parents[3]
 dbt_project = DbtProject(project_dir=REPO_ROOT / "transform", profiles_dir=REPO_ROOT / "transform")
 dbt_project.prepare_if_dev()
+
+# Prefer the dbt installed next to this interpreter, so runs work without an activated venv
+# (CI, service managers); fall back to whatever `dbt` is on PATH.
+_venv_dbt = Path(sys.executable).with_name("dbt")
+DBT_EXECUTABLE = str(_venv_dbt) if _venv_dbt.exists() else (shutil.which("dbt") or "dbt")
 
 RETRY = RetryPolicy(max_retries=3, delay=30, backoff=Backoff.EXPONENTIAL)
 
@@ -223,5 +230,5 @@ defs = Definitions(
                            execution_timezone="America/Toronto",
                            default_status=DefaultScheduleStatus.RUNNING),
     ],
-    resources={"dbt": DbtCliResource(project_dir=dbt_project)},
+    resources={"dbt": DbtCliResource(project_dir=dbt_project, dbt_executable=DBT_EXECUTABLE)},
 )
