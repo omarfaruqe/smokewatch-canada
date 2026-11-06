@@ -95,3 +95,14 @@ models:
               arguments:
                 to: ref('dim_census_division')
                 field: cduid
+
+  - name: fct_fire_season_perimeters
+    description: Final perimeters of Canadian fires in archived seasons, with census division.
+    data_tests:
+      - unique:
+          column_name: "season_year::text || '|' || perimeter_uid::text"
+    columns:
+      - name: area_ha
+        data_tests: [not_null, non_negative]
+      - name: active_days
+        data_tests: [non_negative]

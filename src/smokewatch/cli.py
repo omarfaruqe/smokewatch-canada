@@ -51,9 +51,10 @@ def main(argv: list[str] | None = None) -> None:
     sc.add_argument("--force", action="store_true", help="re-download files already in bronze")
 
     ld = sub.add_parser("load", help="load bronze data into Postgres raw schema")
-    ld.add_argument("dataset", choices=["census", "features", "naps"],
+    ld.add_argument("dataset", choices=["census", "features", "naps", "season-perimeters"],
                     help="census = StatCan reference; features = hotspots, perimeters, AQHI, "
-                         "weather; naps = NAPS hourly archive and stations")
+                         "weather; naps = NAPS hourly archive and stations; "
+                         "season-perimeters = CWFIS past-season perimeter archives")
     ld.add_argument("--sink", choices=["local", "s3"], default="s3", help="bronze to read from")
     ld.add_argument("--force", action="store_true", help="reload partitions even if unchanged")
 
@@ -107,7 +108,11 @@ def main(argv: list[str] | None = None) -> None:
             print(f"{r.name}: {status} -> {r.key}")
 
     elif args.command == "load":
-        if args.dataset == "naps":
+        if args.dataset == "season-perimeters":
+            from smokewatch.loaders import cwfis_archive as archive_loader
+
+            print(archive_loader.load(store, force=args.force))
+        elif args.dataset == "naps":
             from smokewatch.loaders import naps as naps_loader
 
             print(naps_loader.load(store, force=args.force))

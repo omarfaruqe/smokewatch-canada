@@ -9,6 +9,8 @@ sources:
         description: CWFIS satellite hotspots (North America), both 24 h and season layers.
       - name: cwfis_fire_perimeters
         description: Daily snapshots of CWFIS current fire perimeters (M3 polygons, North America).
+      - name: cwfis_season_perimeters
+        description: CWFIS final perimeters of past seasons (archive), EPSG:3978.
       - name: eccc_aqhi_observations
         description: ECCC hourly AQHI observations.
       - name: eccc_aqhi_forecasts
