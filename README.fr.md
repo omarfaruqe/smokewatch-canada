@@ -53,16 +53,22 @@ uvicorn smokewatch.api.main:app --port 8000            # http://localhost:8000
 - CAS calculée de 15 à 17 dans la région de Montréal le 25 juin 2023
 - Pic des points chauds en juin au Québec et en août dans les Territoires du Nord-Ouest
 - 16,0 millions d'hectares de périmètres pour l'ensemble du Canada
-- Jusqu'à 15,4 millions de personnes dans des divisions où l'air était à risque élevé
-  (30 juin 2023)
+- Le 30 juin 2023 : 15,1 millions de personnes près d'une station à risque élevé
+  (15,4 millions selon le décompte par division entière)
 
 ## Méthode et limites
 
-L'exposition est estimée par division de recensement de 2021 : si un lieu de mesure de la CAS
-d'une division atteint un risque élevé (CAS arrondie de 7 ou plus) au cours d'une journée
-(UTC), toute la population de la division est comptée. Les totaux sont donc des bornes
-supérieures. Les périmètres du SCIFV sont des estimations fondées sur les points chauds, et
-non des tracés cartographiés par les agences.
+La population exposée à un air à risque élevé (CAS arrondie de 7 ou plus pendant un jour UTC)
+est estimée de deux façons :
+
+- **Station la plus proche :** chacune des quelque 57 000 aires de diffusion de 2021 est
+  comptée lorsque le lieu de mesure de la CAS le plus proche, à moins de 50 km, a connu une
+  heure à risque élevé. Environ 28 à 29 millions de personnes (78 %) sont à portée.
+- **Décompte par division entière :** toute la population d'une division de recensement est
+  comptée dès qu'un de ses lieux de mesure atteint un risque élevé.
+
+Aucune des deux valeurs ne borne l'autre. Les périmètres du SCIFV sont des estimations fondées
+sur les points chauds, et non des tracés cartographiés par les agences.
 
 ## Licence
 

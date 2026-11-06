@@ -109,15 +109,23 @@ uvicorn smokewatch.api.main:app --port 8000
 
 ### Peak exposure days, 2023
 
-| Day | People in divisions with high-risk air | Peak AQHI |
-|---|---|---|
-| 2023-06-30 | 15.4 M | 12.0 |
-| 2023-06-06 | 12.6 M | 14.3 |
-| 2023-07-01 | 12.6 M | 16.0 |
-| 2023-06-07 | 10.6 M | 30.6 |
+| Day | Nearest-station estimate | Whole-division count | Peak AQHI |
+|---|---|---|---|
+| 2023-06-30 | 15.1 M | 15.4 M | 12.0 |
+| 2023-07-01 | 11.6 M | 12.6 M | 16.0 |
+| 2023-06-28 | 11.5 M | 12.5 M | 19.0 |
+| 2023-06-06 | 10.5 M | 12.6 M | 14.3 |
+| 2023-06-07 | 9.8 M | 10.6 M | 30.6 |
 
-Upper bounds: a division's whole population counts once any of its AQHI locations reaches
-high risk (rounded AQHI 7+) that UTC day.
+People exposed to high-risk air (rounded AQHI 7+ during a UTC day), two ways:
+
+- **Nearest station:** each of ~57,000 2021 dissemination areas counts when its nearest AQHI
+  location within 50 km had a high-risk hour. About 28-29 M people (78%) are within range.
+- **Whole-division count:** a census division's whole population counts once any of its AQHI
+  locations had a high-risk hour.
+
+Neither bounds the other: whole divisions overcount large rural divisions, while nearest-station
+assignment can cross division borders (on 2023-06-26 it is higher: 6.6 M vs 5.4 M).
 
 ## Orchestration (Dagster)
 
