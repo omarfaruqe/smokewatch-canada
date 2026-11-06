@@ -26,7 +26,7 @@ jobs:
         run: .venv/bin/pytest -q
 
   dbt:
-    name: dbt compile and Dagster definitions
+    name: dbt build on fixtures and Dagster definitions
     runs-on: ubuntu-24.04
     services:
       postgres:
@@ -55,10 +55,10 @@ jobs:
           uv venv && uv pip install -e ".[dbt,orchestration]"
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: dbt debug (connection and project)
-        run: .venv/bin/dbt debug --project-dir transform --profiles-dir transform
-      - name: dbt parse and compile all models and tests
-        run: |
-          .venv/bin/dbt parse --project-dir transform --profiles-dir transform
-          .venv/bin/dbt compile --project-dir transform --profiles-dir transform
+        run: dbt debug --project-dir transform --profiles-dir transform
+      - name: dbt parse
+        run: dbt parse --project-dir transform --profiles-dir transform
+      - name: dbt build on fixture data (all models and data tests)
+        run: scripts/ci_dbt_fixture_build.sh
       - name: Dagster definitions load (uses the dbt manifest)
-        run: .venv/bin/dagster definitions validate -m smokewatch.orchestration.definitions
+        run: dagster definitions validate -m smokewatch.orchestration.definitions
