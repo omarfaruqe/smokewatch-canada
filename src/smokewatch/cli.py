@@ -11,6 +11,7 @@ from smokewatch.extractors import (
     cwfis_perimeters,
     eccc_aqhi,
     eccc_climate,
+    naps,
     statcan,
 )
 from smokewatch.storage import get_store
@@ -35,14 +36,20 @@ def main(argv: list[str] | None = None) -> None:
     aq.add_argument("kind", choices=["observations", "forecasts"])
     _add_dates(aq)
     _add_dates(sub.add_parser("weather", help="ECCC hourly climate observations -> bronze"))
+    na = sub.add_parser("naps", help="ECCC NAPS hourly archive (one year) + stations -> bronze")
+    na.add_argument("--year", type=int, required=True)
+    na.add_argument("--pollutants", nargs="+", default=list(naps.DEFAULT_POLLUTANTS))
+    na.add_argument("--sink", choices=["local", "s3"], default="s3")
+    na.add_argument("--force", action="store_true", help="re-download even if unchanged")
     sc = sub.add_parser("statcan", help="StatCan 2021 Census boundaries and population -> bronze")
     sc.add_argument("--sink", choices=["local", "s3"], default="s3")
     sc.add_argument("--only", nargs="+", choices=list(statcan.FILES), help="subset of files")
     sc.add_argument("--force", action="store_true", help="re-download files already in bronze")
 
     ld = sub.add_parser("load", help="load bronze data into Postgres raw schema")
-    ld.add_argument("dataset", choices=["census", "features"],
-                    help="census = StatCan reference data; features = hotspots, AQHI, weather")
+    ld.add_argument("dataset", choices=["census", "features", "naps"],
+                    help="census = StatCan reference; features = hotspots, perimeters, AQHI, "
+                         "weather; naps = NAPS hourly archive and stations")
     ld.add_argument("--sink", choices=["local", "s3"], default="s3", help="bronze to read from")
     ld.add_argument("--force", action="store_true", help="reload partitions even if unchanged")
 
@@ -78,13 +85,24 @@ def main(argv: list[str] | None = None) -> None:
             r = eccc_aqhi.observations(store, args.date)
             print(f"{r.feature_count} observations -> {r.data_key}")
 
+    elif args.command == "naps":
+        for r in naps.fetch_year(store, args.year, tuple(args.pollutants), force=args.force):
+            status = "unchanged" if r.skipped else f"{r.bytes / 1e6:.1f} MB"
+            print(f"{r.name}: {status} -> {r.key}")
+        st = naps.fetch_stations(store)
+        print(f"stations: {st.bytes / 1e3:.0f} kB -> {st.key}")
+
     elif args.command == "statcan":
         for r in statcan.fetch(store, args.only, force=args.force):
             status = "skipped (exists)" if r.skipped else f"{r.bytes / 1e6:.1f} MB"
             print(f"{r.name}: {status} -> {r.key}")
 
     elif args.command == "load":
-        if args.dataset == "census":
+        if args.dataset == "naps":
+            from smokewatch.loaders import naps as naps_loader
+
+            print(naps_loader.load(store, force=args.force))
+        elif args.dataset == "census":
             from smokewatch.loaders import statcan_census
 
             for name, n in statcan_census.load(store).items():

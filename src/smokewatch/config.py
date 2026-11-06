@@ -25,6 +25,7 @@ class Settings:
         "CWFIS_WFS_URL", "https://cwfis.cfs.nrcan.gc.ca/geoserver/public/ows"
     )
     eccc_api_url: str = os.getenv("ECCC_API_URL", "https://api.weather.gc.ca")
+    naps_api_url: str = os.getenv("NAPS_API_URL", "https://data-donnees.az.ec.gc.ca/api")
     user_agent: str = os.getenv("HTTP_USER_AGENT", "smokewatch-canada/0.1")
 
     @property
