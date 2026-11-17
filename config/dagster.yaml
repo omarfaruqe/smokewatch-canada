@@ -1,0 +1,11 @@
+# Dagster instance settings for local development (copied to $DAGSTER_HOME by
+# scripts/dagster_dev.sh). Validated against Dagster 1.13.
+#
+# One run at a time: the hourly and daily jobs both end with a dbt build over the same
+# tables, and overlapping builds can block each other. Extra runs wait in the queue.
+concurrency:
+  runs:
+    max_concurrent_runs: 1
+
+telemetry:
+  enabled: false

@@ -130,7 +130,7 @@ assignment can cross division borders (on 2023-06-26 it is higher: 6.6 M vs 5.4 
 ## Orchestration (Dagster)
 
 ```bash
-export DAGSTER_HOME="$PWD/.dagster" && dagster dev   # UI at http://localhost:3000
+scripts/dagster_dev.sh                               # UI at http://localhost:3000
 ```
 
 | Schedule (America/Toronto) | Job | What runs |
@@ -138,6 +138,9 @@ export DAGSTER_HOME="$PWD/.dagster" && dagster dev   # UI at http://localhost:30
 | Every hour at :20 | `hourly_air_quality` | AQHI observations and forecasts, their raw loads and downstream dbt models |
 | Daily at 07:35 | `daily_pipeline` | Hotspots, fire perimeters, weather, AQHI re-pull, all raw loads, full dbt build |
 
+- `scripts/dagster_dev.sh` uses `.dagster/` as `DAGSTER_HOME` and installs
+  `config/dagster.yaml`: one run at a time (overlapping dbt builds can block each other) and
+  telemetry off
 - Extraction and load assets retry 3 times with exponential backoff
 - Each raw table has a `partition_freshness` check (warns when the newest partition is too old)
 - dbt tests run with the models and appear as asset checks

@@ -39,7 +39,7 @@ pytest -q
 ## Orchestration, API et tableau de bord
 
 ```bash
-export DAGSTER_HOME="$PWD/.dagster" && dagster dev     # http://localhost:3000
+scripts/dagster_dev.sh                                 # http://localhost:3000 (une exécution à la fois)
 uvicorn smokewatch.api.main:app --port 8000            # http://localhost:8000
 ```
 
