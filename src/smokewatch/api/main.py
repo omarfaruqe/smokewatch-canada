@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 from typing import Annotated, Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlalchemy import Connection
@@ -42,6 +42,21 @@ app = FastAPI(
     ),
 )
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
+
+# Data only changes when the pipeline reloads, and replaying a season revisits the same days,
+# so data responses may be cached briefly. Health responses must always be fresh.
+CACHE_SECONDS = int(os.getenv("API_CACHE_SECONDS", "300"))
+
+
+@app.middleware("http")
+async def cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    if request.method == "GET" and response.status_code == 200:
+        if request.url.path.startswith("/health"):
+            response.headers["Cache-Control"] = "no-store"
+        else:
+            response.headers.setdefault("Cache-Control", f"public, max-age={CACHE_SECONDS}")
+    return response
 
 
 def get_conn() -> Iterator[Connection]:

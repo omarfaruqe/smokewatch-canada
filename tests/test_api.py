@@ -79,3 +79,11 @@ def test_pipeline_health_endpoint(client):
     r = c.get("/health/pipeline")
     assert r.status_code == 200 and r.json()[0]["dataset"] == "hotspots"
     assert calls["pipeline_health"] == ()
+
+
+def test_cache_headers(client):
+    c, _ = client
+    data = c.get("/exposure", params={"date": "2023-06-07"})
+    assert data.headers["cache-control"].startswith("public, max-age=")
+    assert c.get("/health/pipeline").headers["cache-control"] == "no-store"
+    assert "cache-control" not in c.get("/exposure", params={"date": "bad"}).headers
