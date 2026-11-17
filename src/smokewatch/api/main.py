@@ -64,6 +64,12 @@ def health(conn: Conn) -> dict:
     return {"status": "ok", "version": __version__, "coverage": queries.coverage(conn)}
 
 
+@app.get("/health/pipeline", tags=["meta"])
+def pipeline_health(conn: Conn) -> list[dict]:
+    """Per dataset: partitions and rows loaded, last load time, and latest observation."""
+    return queries.pipeline_health(conn)
+
+
 @app.get("/exposure/daily", tags=["exposure"])
 def exposure_daily(conn: Conn, start: date, end: date) -> list[dict]:
     """National totals per UTC day: population exposed to high-risk air, hotspots, peak AQHI."""

@@ -42,5 +42,17 @@ BEGIN
     SELECT smoke_report_hours INTO n FROM marts.fct_daily_exposure WHERE day = '2026-06-07' AND cduid = '2465';
     IF n <> 6 THEN RAISE EXCEPTION 'smoke reports: expected 6 hours in Laval, got %', n; END IF;
 
+    -- Pipeline health: load history from raw._load_log, freshness from the marts.
+    SELECT count(*) INTO n FROM marts.fct_pipeline_health;
+    IF n <> 7 THEN RAISE EXCEPTION 'pipeline health: expected 7 datasets, got %', n; END IF;
+    SELECT partitions_loaded INTO n FROM marts.fct_pipeline_health WHERE dataset = 'hotspots';
+    IF n <> 2 THEN RAISE EXCEPTION 'pipeline health: expected 2 hotspot partitions, got %', n; END IF;
+    SELECT data_through INTO d FROM marts.fct_pipeline_health WHERE dataset = 'hotspots';
+    IF d.data_through <> '2026-06-07 20:00:00+00'::timestamptz THEN
+        RAISE EXCEPTION 'pipeline health: hotspots data_through should be 20:00 UTC, got %', d.data_through;
+    END IF;
+    SELECT newest_partition_year INTO n FROM marts.fct_pipeline_health WHERE dataset = 'naps_hourly';
+    IF n <> 2026 THEN RAISE EXCEPTION 'pipeline health: NAPS newest year should be 2026, got %', n; END IF;
+
     RAISE NOTICE 'all fixture expectations met';
 END $$;

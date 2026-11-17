@@ -27,6 +27,7 @@ def client(monkeypatch):
     fake("division_exposure", [{"cduid": "2466"}])
     fake("hotspots_geojson", {"type": "FeatureCollection", "features": []})
     fake("fire_history", [])
+    fake("pipeline_health", [{"dataset": "hotspots", "data_through": "2026-06-07T20:00:00Z"}])
     yield TestClient(main.app), calls
     main.app.dependency_overrides.clear()
 
@@ -71,3 +72,10 @@ def test_dashboard_is_served(client):
     c, _ = client
     r = c.get("/")
     assert r.status_code == 200 and "SmokeWatch" in r.text and "maplibre" in r.text
+
+
+def test_pipeline_health_endpoint(client):
+    c, calls = client
+    r = c.get("/health/pipeline")
+    assert r.status_code == 200 and r.json()[0]["dataset"] == "hotspots"
+    assert calls["pipeline_health"] == ()

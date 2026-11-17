@@ -39,6 +39,15 @@ def coverage(conn: Connection) -> dict:
     """)[0]
 
 
+def pipeline_health(conn: Connection) -> list[dict]:
+    return _rows(conn, """
+        select dataset, description, partitions_loaded, rows_loaded, last_loaded_at,
+               newest_partition_date, newest_partition_year, data_through, built_at
+        from marts.fct_pipeline_health
+        order by dataset
+    """)
+
+
 def national_daily(conn: Connection, start: date, end: date) -> list[dict]:
     return _rows(conn, """
         select

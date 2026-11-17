@@ -54,6 +54,12 @@ CREATE TABLE raw._load_log (
     PRIMARY KEY (dataset, partition)
 );
 
+INSERT INTO raw._load_log (dataset, partition, sha256, row_count) VALUES
+    ('hotspots', 'cwfis/hotspots/hotspots_24h/date=2026-06-07', 'fixture', 1),
+    ('hotspots', 'cwfis/hotspots/hotspots/date=2026-06-07', 'fixture', 4),
+    ('aqhi_observations', 'eccc/aqhi-observations-realtime/date=2026-06-07', 'fixture', 11),
+    ('naps_hourly', 'naps/hourly/PM25/year=2026', 'fixture', 2);
+
 DO $$
 DECLARE t text;
 BEGIN
