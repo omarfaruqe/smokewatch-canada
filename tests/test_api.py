@@ -95,3 +95,12 @@ def test_forecast_skill_endpoint(client):
     r = c.get("/aqhi/forecast-skill")
     assert r.status_code == 200 and r.json()[0]["lead_bucket"] == "00-06h"
     assert calls["forecast_skill"] == ()
+
+
+def test_numeric_values_are_json_numbers():
+    from decimal import Decimal
+
+    from smokewatch.api.queries import _plain
+
+    assert _plain(Decimal("0.20")) == 0.2 and isinstance(_plain(Decimal("1")), float)
+    assert _plain(5) == 5 and _plain("x") == "x" and _plain(None) is None

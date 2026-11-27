@@ -1,14 +1,21 @@
 """SQL behind each API endpoint. Every query reads the dbt `marts` schema only."""
 
 from datetime import date
+from decimal import Decimal
 
 from sqlalchemy import Connection, text
 
 PROVINCES = ("NL", "PE", "NS", "NB", "QC", "ON", "MB", "SK", "AB", "BC", "YT", "NT", "NU")
 
 
+def _plain(value):
+    """Postgres numeric arrives as Decimal, which JSON encoders write as a string."""
+    return float(value) if isinstance(value, Decimal) else value
+
+
 def _rows(conn: Connection, sql: str, **params) -> list[dict]:
-    return [dict(r._mapping) for r in conn.execute(text(sql), params)]
+    return [{k: _plain(v) for k, v in r._mapping.items()}
+            for r in conn.execute(text(sql), params)]
 
 
 def _feature_collection(conn: Connection, sql: str, **params) -> dict:
