@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff==0.17.4", "httpx>=0.27"]
+dev = ["pytest>=8.0", "ruff==0.17.6", "httpx>=0.27"]
 dbt = ["dbt-core==1.12.6", "dbt-postgres==1.11.0"]
 api = ["fastapi==0.115.12", "uvicorn[standard]==0.34.2"]
 orchestration = [
