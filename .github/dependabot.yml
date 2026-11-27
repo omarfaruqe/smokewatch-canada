@@ -1,0 +1,36 @@
+# Weekly dependency updates. Each pull request runs the full CI (lint, tests, dbt build on
+# fixtures, Dagster definitions), so an update is only merged once it is known to work.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "Update GitHub Actions"
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      dbt:
+        patterns: ["dbt-*"]
+      dagster:
+        patterns: ["dagster*"]
+      api:
+        patterns: ["fastapi", "uvicorn*"]
+      dev:
+        patterns: ["pytest", "ruff", "httpx"]
+    ignore:
+      # Major upgrades are deliberate changes (see docs/decisions.md), not routine updates.
+      - dependency-name: "dbt-core"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: "Update Python dependencies"
