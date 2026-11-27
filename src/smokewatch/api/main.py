@@ -3,8 +3,12 @@
 Run:  uvicorn smokewatch.api.main:app --reload     (docs at http://localhost:8000/docs)
 """
 
+import gzip
+import logging
 import os
+import threading
 from collections.abc import Iterator
+from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
 from typing import Annotated, Literal
@@ -20,10 +24,52 @@ from smokewatch.api import queries
 from smokewatch.db import get_engine
 
 STATIC = Path(__file__).parent / "static"
+log = logging.getLogger(__name__)
+
+
+class ShapesCache:
+    """Census division boundaries, built once per process and kept plain and gzipped.
+
+    Building them takes Postgres several seconds (293 detailed shapes), and they only change
+    when the census does, so the first request should not pay that cost. Warmed in the
+    background at startup; a request arriving first builds them itself, exactly once.
+    Restart the API after restoring a snapshot with new boundaries.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self.plain: bytes | None = None
+        self.gzipped: bytes | None = None
+
+    def get(self) -> tuple[bytes, bytes]:
+        with self._lock:
+            if self.plain is None:
+                with get_engine().connect() as conn:
+                    self.plain = queries.division_shapes_geojson(conn).encode()
+                self.gzipped = gzip.compress(self.plain, compresslevel=6)
+                log.info("census division shapes cached: %d bytes, %d gzipped",
+                         len(self.plain), len(self.gzipped))
+            return self.plain, self.gzipped
+
+    def warm(self) -> None:
+        try:
+            self.get()
+        except Exception:  # database not ready yet: the first request will build them
+            log.warning("could not warm the shapes cache at startup", exc_info=True)
+
+
+shapes_cache = ShapesCache()
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    threading.Thread(target=shapes_cache.warm, daemon=True).start()
+    yield
 Province = Literal["NL", "PE", "NS", "NB", "QC", "ON", "MB", "SK", "AB", "BC", "YT", "NT", "NU"]
 MAX_RANGE_DAYS = 400
 
 app = FastAPI(
+    lifespan=lifespan,
     # Set API_ROOT_PATH=/smokewatch when served under that path by a reverse proxy, so the
     # interactive docs load their OpenAPI schema from the right URL.
     root_path=os.getenv("API_ROOT_PATH", ""),
@@ -112,10 +158,18 @@ def exposure_by_division(conn: Conn, date: date, province: Province | None = Non
 
 
 @app.get("/geo/census-divisions/shapes", tags=["map"], response_class=Response)
-def census_division_shapes(conn: Conn) -> Response:
+def census_division_shapes(request: Request) -> Response:
     """All 293 census division boundaries (WGS84) with static attributes, cached for a day.
     Load once and colour by day with GET /exposure?date=, instead of re-downloading shapes."""
-    return geojson(queries.division_shapes_geojson(conn), SHAPES_CACHE_SECONDS)
+    plain, gzipped = shapes_cache.get()
+    headers = {
+        "Cache-Control": f"public, max-age={SHAPES_CACHE_SECONDS}",
+        "Vary": "Accept-Encoding",
+    }
+    if "gzip" in request.headers.get("accept-encoding", ""):
+        headers["Content-Encoding"] = "gzip"
+        return Response(content=gzipped, media_type=GEOJSON, headers=headers)
+    return Response(content=plain, media_type=GEOJSON, headers=headers)
 
 
 @app.get("/geo/census-divisions", tags=["map"], response_class=Response)

@@ -11,3 +11,5 @@ $DC exec -T db pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --no-
   --jobs=1 --exit-on-error /snapshot/marts.dump
 $DC exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ANALYZE;" \
   -c "SELECT count(*) AS hotspots FROM marts.fct_hotspots;"
+# The API caches census division shapes in memory; restart it so they are rebuilt.
+$DC restart api

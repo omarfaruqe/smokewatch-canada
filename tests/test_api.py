@@ -12,9 +12,24 @@ from fastapi.testclient import TestClient  # noqa: E402
 from smokewatch.api import main, queries  # noqa: E402
 
 
+class _FakeEngine:
+    """Stands in for the SQLAlchemy engine where code opens its own connection."""
+
+    def connect(self):
+        return self
+
+    def __enter__(self):
+        return None
+
+    def __exit__(self, *a):
+        return False
+
+
 @pytest.fixture
 def client(monkeypatch):
     main.app.dependency_overrides[main.get_conn] = lambda: None
+    main.shapes_cache.plain = main.shapes_cache.gzipped = None
+    monkeypatch.setattr(main, "get_engine", _FakeEngine)
     calls = {}
 
     def fake(name, result):
@@ -119,6 +134,20 @@ def test_geojson_is_passed_through_with_type_and_shape_cache(client):
 def test_large_responses_are_gzipped(client, monkeypatch):
     c, _ = client
     big = '{"type": "FeatureCollection", "features": [' + ",".join(['{"a": 1}'] * 500) + "]}"
-    monkeypatch.setattr(queries, "division_shapes_geojson", lambda conn: big)
-    r = c.get("/geo/census-divisions/shapes", headers={"Accept-Encoding": "gzip"})
+    monkeypatch.setattr(queries, "hotspots_geojson", lambda conn, *a: big)
+    r = c.get("/geo/hotspots", params={"date": "2023-06-07"}, headers={"Accept-Encoding": "gzip"})
     assert r.headers.get("content-encoding") == "gzip" and len(r.json()["features"]) == 500
+
+
+def test_shapes_are_built_once_and_served_gzipped(client, monkeypatch):
+    c, _ = client
+    builds = []
+    big = '{"type": "FeatureCollection", "features": [' + ",".join(['{"a": 1}'] * 500) + "]}"
+    monkeypatch.setattr(queries, "division_shapes_geojson", lambda conn: builds.append(1) or big)
+    main.shapes_cache.plain = main.shapes_cache.gzipped = None
+    for _ in range(3):
+        r = c.get("/geo/census-divisions/shapes", headers={"Accept-Encoding": "gzip"})
+        assert r.headers["content-encoding"] == "gzip" and len(r.json()["features"]) == 500
+    plain = c.get("/geo/census-divisions/shapes", headers={"Accept-Encoding": "identity"})
+    assert "content-encoding" not in plain.headers and len(plain.json()["features"]) == 500
+    assert len(builds) == 1
