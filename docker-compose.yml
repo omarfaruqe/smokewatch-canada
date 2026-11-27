@@ -34,8 +34,9 @@ services:
         JSON
         exec weed server -dir=/data -s3 -s3.port=8333 -s3.config=/tmp/s3.json
     ports:
-      - "8333:8333"   # S3 API
-      - "8888:8888"   # filer web UI (browse buckets)
+      # Host ports are configurable so other local projects can use the defaults.
+      - "${S3_HOST_PORT:-8333}:8333"      # S3 API
+      - "${FILER_HOST_PORT:-8888}:8888"   # filer web UI (browse buckets)
     volumes:
       - s3data:/data
 
