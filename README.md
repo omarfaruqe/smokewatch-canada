@@ -175,6 +175,11 @@ scripts/dagster_dev.sh                               # UI at http://localhost:30
 - [x] Sprint 7 — API and map dashboard
 - [x] Sprint 8 — CI/CD, docs, bilingual README, deployment
 
+## Design decisions
+
+Why SeaweedFS, jsonb raw tables, SQL-derived SCD2, computed historical AQHI, two exposure
+estimates and a snapshot deployment: see [docs/decisions.md](docs/decisions.md).
+
 ## Deployment
 
 Snapshot deployment behind a reverse proxy (API, dashboard and the `marts` schema only):
