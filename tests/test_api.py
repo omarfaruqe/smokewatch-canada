@@ -25,7 +25,8 @@ def client(monkeypatch):
 
     fake("national_daily", [{"day": "2023-06-07", "population_exposed_high_risk": 1}])
     fake("division_exposure", [{"cduid": "2466"}])
-    fake("hotspots_geojson", {"type": "FeatureCollection", "features": []})
+    fake("hotspots_geojson", '{"type": "FeatureCollection", "features": []}')
+    fake("division_shapes_geojson", '{"type": "FeatureCollection", "features": []}')
     fake("fire_history", [])
     fake("forecast_skill", [{"lead_bucket": "00-06h", "mae": 0.2}])
     fake("pipeline_health", [{"dataset": "hotspots", "data_through": "2026-06-07T20:00:00Z"}])
@@ -104,3 +105,20 @@ def test_numeric_values_are_json_numbers():
 
     assert _plain(Decimal("0.20")) == 0.2 and isinstance(_plain(Decimal("1")), float)
     assert _plain(5) == 5 and _plain("x") == "x" and _plain(None) is None
+
+
+def test_geojson_is_passed_through_with_type_and_shape_cache(client):
+    c, _ = client
+    r = c.get("/geo/hotspots", params={"date": "2023-06-07"})
+    assert r.status_code == 200 and r.headers["content-type"].startswith("application/geo+json")
+    assert r.json() == {"type": "FeatureCollection", "features": []}
+    shapes = c.get("/geo/census-divisions/shapes")
+    assert shapes.headers["cache-control"] == "public, max-age=86400"
+
+
+def test_large_responses_are_gzipped(client, monkeypatch):
+    c, _ = client
+    big = '{"type": "FeatureCollection", "features": [' + ",".join(['{"a": 1}'] * 500) + "]}"
+    monkeypatch.setattr(queries, "division_shapes_geojson", lambda conn: big)
+    r = c.get("/geo/census-divisions/shapes", headers={"Accept-Encoding": "gzip"})
+    assert r.headers.get("content-encoding") == "gzip" and len(r.json()["features"]) == 500

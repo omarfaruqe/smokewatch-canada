@@ -11,7 +11,8 @@ from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import FileResponse, Response
 from sqlalchemy import Connection
 
 from smokewatch import __version__
@@ -42,6 +43,15 @@ app = FastAPI(
     ),
 )
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
+app.add_middleware(GZipMiddleware, minimum_size=1024)  # GeoJSON compresses several-fold
+
+GEOJSON = "application/geo+json"
+SHAPES_CACHE_SECONDS = 86_400  # boundaries change only when the census does
+
+
+def geojson(body: str, cache_seconds: int | None = None) -> Response:
+    headers = {"Cache-Control": f"public, max-age={cache_seconds}"} if cache_seconds else None
+    return Response(content=body, media_type=GEOJSON, headers=headers)
 
 # Data only changes when the pipeline reloads, and replaying a season revisits the same days,
 # so data responses may be cached briefly. Health responses must always be fresh.
@@ -101,27 +111,34 @@ def exposure_by_division(conn: Conn, date: date, province: Province | None = Non
     return queries.division_exposure(conn, date, province)
 
 
-@app.get("/geo/census-divisions", tags=["map"])
-def census_divisions_geojson(conn: Conn, date: date) -> dict:
+@app.get("/geo/census-divisions/shapes", tags=["map"], response_class=Response)
+def census_division_shapes(conn: Conn) -> Response:
+    """All 293 census division boundaries (WGS84) with static attributes, cached for a day.
+    Load once and colour by day with GET /exposure?date=, instead of re-downloading shapes."""
+    return geojson(queries.division_shapes_geojson(conn), SHAPES_CACHE_SECONDS)
+
+
+@app.get("/geo/census-divisions", tags=["map"], response_class=Response)
+def census_divisions_geojson(conn: Conn, date: date) -> Response:
     """All 293 census divisions as GeoJSON (WGS84) with that day's fire and air metrics."""
-    return queries.division_geojson(conn, date)
+    return geojson(queries.division_geojson(conn, date))
 
 
-@app.get("/geo/hotspots", tags=["map"])
+@app.get("/geo/hotspots", tags=["map"], response_class=Response)
 def hotspots_geojson(
     conn: Conn,
     date: date,
     province: Province | None = None,
     limit: Annotated[int, Query(ge=1, le=50_000)] = 20_000,
-) -> dict:
+) -> Response:
     """Canadian satellite hotspots detected on a UTC day, strongest (FRP) first."""
-    return queries.hotspots_geojson(conn, date, province, limit)
+    return geojson(queries.hotspots_geojson(conn, date, province, limit))
 
 
-@app.get("/geo/fires/season/{year}", tags=["map"])
-def season_perimeters(conn: Conn, year: int, province: Province | None = None) -> dict:
+@app.get("/geo/fires/season/{year}", tags=["map"], response_class=Response)
+def season_perimeters(conn: Conn, year: int, province: Province | None = None) -> Response:
     """Final fire perimeters of an archived season (e.g. 2023) as GeoJSON."""
-    return queries.season_perimeters_geojson(conn, year, province)
+    return geojson(queries.season_perimeters_geojson(conn, year, province))
 
 
 @app.get("/fires/{perimeter_id}/history", tags=["fires"])

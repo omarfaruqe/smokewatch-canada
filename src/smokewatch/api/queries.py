@@ -18,20 +18,23 @@ def _rows(conn: Connection, sql: str, **params) -> list[dict]:
             for r in conn.execute(text(sql), params)]
 
 
-def _feature_collection(conn: Connection, sql: str, **params) -> dict:
-    """Wrap a query returning (geometry_json, properties_json) rows as GeoJSON."""
+def _feature_collection(conn: Connection, sql: str, **params) -> str:
+    """Wrap a query returning (geometry_json, properties_json) rows as GeoJSON text.
+
+    Postgres builds the whole document and it is passed through as text: parsing it into
+    Python objects and re-encoding it took several times its size in memory (a 19 MB layer
+    exceeded the API's memory cap).
+    """
     wrapped = f"""
-        select coalesce(json_build_object(
+        select json_build_object(
             'type', 'FeatureCollection',
-            'features', json_agg(json_build_object(
-                'type', 'Feature', 'geometry', q.geometry::json, 'properties', q.properties))
-        ), '{{"type":"FeatureCollection","features":[]}}'::json) as fc
+            'features', coalesce(json_agg(json_build_object(
+                'type', 'Feature', 'geometry', q.geometry::json, 'properties', q.properties)),
+                '[]'::json)
+        )::text as fc
         from ({sql}) q
     """
-    fc = conn.execute(text(wrapped), params).scalar_one()
-    if fc.get("features") is None:
-        fc["features"] = []
-    return fc
+    return conn.execute(text(wrapped), params).scalar_one()
 
 
 def coverage(conn: Connection) -> dict:
@@ -89,7 +92,21 @@ def division_exposure(conn: Connection, day: date, province: str | None) -> list
     """, day=day, province=province)
 
 
-def division_geojson(conn: Connection, day: date) -> dict:
+def division_shapes_geojson(conn: Connection) -> str:
+    """Census division boundaries with static attributes only (no daily metrics)."""
+    return _feature_collection(conn, """
+        select
+            ST_AsGeoJSON(geom_4326, 4) as geometry,
+            json_build_object(
+                'cduid', cduid, 'name', cd_name, 'province', province_code,
+                'province_name_en', province_name_en, 'province_name_fr', province_name_fr,
+                'population', population_2021
+            ) as properties
+        from marts.dim_census_division
+    """)
+
+
+def division_geojson(conn: Connection, day: date) -> str:
     return _feature_collection(conn, """
         select
             ST_AsGeoJSON(d.geom_4326, 4) as geometry,
@@ -109,7 +126,7 @@ def division_geojson(conn: Connection, day: date) -> dict:
     """, day=day)
 
 
-def hotspots_geojson(conn: Connection, day: date, province: str | None, limit: int) -> dict:
+def hotspots_geojson(conn: Connection, day: date, province: str | None, limit: int) -> str:
     return _feature_collection(conn, """
         select
             ST_AsGeoJSON(geom, 4) as geometry,
@@ -125,7 +142,7 @@ def hotspots_geojson(conn: Connection, day: date, province: str | None, limit: i
     """, day=day, province=province, limit=limit)
 
 
-def season_perimeters_geojson(conn: Connection, year: int, province: str | None) -> dict:
+def season_perimeters_geojson(conn: Connection, year: int, province: str | None) -> str:
     return _feature_collection(conn, """
         select
             ST_AsGeoJSON(geom_4326, 4) as geometry,

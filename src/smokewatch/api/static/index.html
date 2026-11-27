@@ -115,7 +115,7 @@ const T = {
 };
 // Official AQHI colour scale (1..10, 10+)
 const AQHI_COLORS = ["#00ccff","#0099cc","#006699","#ffff00","#ffcc00","#ff9933","#ff6666","#ff0000","#cc0000","#990000","#660000"];
-let lang = "en", days = [], idx = 0, timer = null, chart = null, exposureByDay = {}, perimLoaded = false;
+let lang = "en", days = [], idx = 0, timer = null, chart = null, exposureByDay = {}, perimLoaded = false, dayRows = {};
 const fmt = (n, d=0) => n == null ? "–" : Number(n).toLocaleString(lang === "fr" ? "fr-CA" : "en-CA", {maximumFractionDigits:d});
 const iso = d => d.toISOString().slice(0, 10);
 const t = k => T[lang][k];
@@ -167,11 +167,13 @@ map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-le
 
 map.on("load", async () => {
   const empty = { type: "FeatureCollection", features: [] };
-  map.addSource("cd", { type: "geojson", data: empty });
+  // Boundaries load once (cached a day); each day only the per-division metrics are fetched
+  // and applied as feature state, so replaying a season no longer re-downloads ~19 MB a day.
+  map.addSource("cd", { type: "geojson", data: empty, promoteId: "cduid" });
   map.addSource("hot", { type: "geojson", data: empty });
   map.addSource("perim", { type: "geojson", data: empty });
-  const aqhiColor = ["case", ["==", ["get", "max_aqhi"], null], "rgba(0,0,0,0)",
-    ["step", ["round", ["get", "max_aqhi"]], AQHI_COLORS[0], 2, AQHI_COLORS[1], 3, AQHI_COLORS[2], 4, AQHI_COLORS[3],
+  const aqhiColor = ["case", ["==", ["feature-state", "max_aqhi"], null], "rgba(0,0,0,0)",
+    ["step", ["round", ["feature-state", "max_aqhi"]], AQHI_COLORS[0], 2, AQHI_COLORS[1], 3, AQHI_COLORS[2], 4, AQHI_COLORS[3],
       5, AQHI_COLORS[4], 6, AQHI_COLORS[5], 7, AQHI_COLORS[6], 8, AQHI_COLORS[7], 9, AQHI_COLORS[8], 10, AQHI_COLORS[9], 11, AQHI_COLORS[10]]];
   map.addLayer({ id: "cd-fill", type: "fill", source: "cd", paint: { "fill-color": aqhiColor, "fill-opacity": 0.6 } });
   map.addLayer({ id: "cd-line", type: "line", source: "cd", paint: { "line-color": "#6b6b6b", "line-width": 0.3, "line-opacity": 0.5 } });
@@ -182,15 +184,17 @@ map.on("load", async () => {
     "circle-color": "#e8590c", "circle-opacity": 0.75 } });
 
   map.on("click", "cd-fill", e => {
-    const p = e.features[0].properties;
+    const p = e.features[0].properties;             // static: name, province, population
+    const d = dayRows[p.cduid] || {};               // the selected day's metrics
     const prov = lang === "fr" ? p.province_name_fr : p.province_name_en;
-    const aq = p.max_aqhi === undefined || p.max_aqhi === null || p.max_aqhi === "null"
-      ? `<i>${t("noData")}</i>` : fmt(p.max_aqhi, 1);
+    const aq = d.max_aqhi == null ? `<i>${t("noData")}</i>` : fmt(d.max_aqhi, 1);
+    const pm = d.pm25_max_station_daily_mean;
     new maplibregl.Popup().setLngLat(e.lngLat).setHTML(
-      `<b>${p.name}</b>, ${prov}<br>${t("peakAqhi")}: ${aq}<br>${t("hours")}: ${fmt(p.high_risk_hours)}` +
-      `<br>${t("pm25")}: ${p.pm25 && p.pm25 !== "null" ? fmt(p.pm25, 1) + " µg/m³" : "–"}` +
-      `<br>${t("fires")}: ${fmt(p.hotspots)}<br>${t("pop")}: ${fmt(p.population)}` +
-      `<br>${t("exposedDaPop")}: ${fmt(p.exposed_da)}<br>${t("exposedPop")}: ${fmt(p.exposed)}`).addTo(map);
+      `<b>${p.name}</b>, ${prov}<br>${t("peakAqhi")}: ${aq}<br>${t("hours")}: ${fmt(d.high_risk_hours ?? 0)}` +
+      `<br>${t("pm25")}: ${pm != null ? fmt(pm, 1) + " µg/m³" : "–"}` +
+      `<br>${t("fires")}: ${fmt(d.hotspot_count ?? 0)}<br>${t("pop")}: ${fmt(p.population)}` +
+      `<br>${t("exposedDaPop")}: ${fmt(d.population_exposed_high_risk_da ?? 0)}` +
+      `<br>${t("exposedPop")}: ${fmt(d.population_exposed_high_risk ?? 0)}`).addTo(map);
   });
   map.on("mouseenter", "cd-fill", () => map.getCanvas().style.cursor = "pointer");
   map.on("mouseleave", "cd-fill", () => map.getCanvas().style.cursor = "");
@@ -206,7 +210,8 @@ map.on("load", async () => {
     map.setLayoutProperty("perim-line", "visibility", e.target.checked ? "visible" : "none");
   });
 
-  const health = await getJSON("health");
+  const [health, shapes] = await Promise.all([getJSON("health"), getJSON("geo/census-divisions/shapes")]);
+  map.getSource("cd").setData(shapes);
   const recentStart = iso(new Date(Date.parse(health.coverage.aqhi_to) - 13 * 864e5));
   const seasons = { "2023": ["2023-05-01", "2023-09-30"], recent: [recentStart, health.coverage.aqhi_to] };
   const sel = document.getElementById("season");
@@ -261,10 +266,13 @@ async function showDay(i, fetchMap = true) {
   document.getElementById("sAqhi").textContent = fmt(s.peak_aqhi, 1);
   if (chart) chart.draw();
   if (!fetchMap) return;
-  const [cd, hot] = await Promise.all([
-    getJSON(`geo/census-divisions?date=${day}`), getJSON(`geo/hotspots?date=${day}&limit=20000`)]);
+  const [rows, hot] = await Promise.all([
+    getJSON(`exposure?date=${day}`), getJSON(`geo/hotspots?date=${day}&limit=20000`)]);
   if (ticket !== pending) return;  // a newer day was requested meanwhile
-  map.getSource("cd").setData(cd); map.getSource("hot").setData(hot);
+  dayRows = Object.fromEntries(rows.map(r => [r.cduid, r]));
+  map.removeFeatureState({ source: "cd" });
+  for (const r of rows) map.setFeatureState({ source: "cd", id: r.cduid }, { max_aqhi: r.max_aqhi });
+  map.getSource("hot").setData(hot);
 }
 
 function stop() { clearInterval(timer); timer = null; document.getElementById("play").textContent = "▶"; }

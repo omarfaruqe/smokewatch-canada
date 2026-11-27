@@ -101,6 +101,7 @@ uvicorn smokewatch.api.main:app --port 8000
 | `GET /health` | Status and data coverage |
 | `GET /exposure/daily?start=&end=` | National daily totals: population exposed, hotspots, peak AQHI |
 | `GET /exposure?date=&province=` | Census divisions for a day, most exposed first |
+| `GET /geo/census-divisions/shapes` | GeoJSON census division boundaries (load once, cached a day) |
 | `GET /geo/census-divisions?date=` | GeoJSON census divisions with the day's metrics |
 | `GET /geo/hotspots?date=&province=&limit=` | GeoJSON hotspots (strongest first) |
 | `GET /geo/fires/season/{year}` | GeoJSON final season perimeters |

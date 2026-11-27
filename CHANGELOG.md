@@ -9,8 +9,16 @@
 - Architecture decision records (`docs/decisions.md`).
 - Dependabot for GitHub Actions and Python dependencies (weekly, grouped).
 
+### Changed
+- The dashboard loads census division boundaries once (`GET /geo/census-divisions/shapes`,
+  cached a day) and colours them per day from `GET /exposure?date=` as map feature state,
+  instead of downloading ~19 MB of shapes for every day of a replay.
+- GeoJSON is passed through from Postgres as text, and responses over 1 KB are gzipped.
+
 ### Fixed
 - Numeric API values are returned as JSON numbers instead of strings.
+- The API ran out of memory under its 384 MB cap building the census division layer
+  (parsing and re-encoding a 19 MB document); the map stayed blank on the server.
 
 ## 0.2.0 — 2026-11-16
 
