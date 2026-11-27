@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **AQHI forecast accuracy:** `fct_aqhi_forecast_pairs` and `fct_aqhi_forecast_skill` (MAE,
+  bias, share within 1 point, probability of detection and false alarm ratio by lead time),
+  served at `GET /aqhi/forecast-skill`.
+- Architecture decision records (`docs/decisions.md`).
+- Dependabot for GitHub Actions and Python dependencies (weekly, grouped).
+
+### Fixed
+- Numeric API values are returned as JSON numbers instead of strings.
+
 ## 0.2.0 — 2026-11-16
 
 ### Added
