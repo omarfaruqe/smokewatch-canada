@@ -106,6 +106,8 @@ uvicorn smokewatch.api.main:app --port 8000
 | `GET /geo/fires/season/{year}` | GeoJSON final season perimeters |
 | `GET /fires/{id}/history` | SCD2 growth history of a current fire |
 | `GET /aqhi?date=&cduid=` | Hourly AQHI for a census division |
+| `GET /aqhi/forecast-skill` | Accuracy of ECCC AQHI forecasts by lead time |
+| `GET /health/pipeline` | Load history and latest observation per dataset |
 
 ### Peak exposure days, 2023
 
@@ -126,6 +128,14 @@ People exposed to high-risk air (rounded AQHI 7+ during a UTC day), two ways:
 
 Neither bounds the other: whole divisions overcount large rural divisions, while nearest-station
 assignment can cross division borders (on 2023-06-26 it is higher: 6.6 M vs 5.4 M).
+
+### AQHI forecast accuracy
+
+`fct_aqhi_forecast_pairs` matches every ECCC hourly AQHI forecast with the observation for the
+same community and hour; `fct_aqhi_forecast_skill` summarizes accuracy by lead time
+(0-6 h to 48 h+): mean absolute error, bias, share within 1 AQHI point, and for high-risk hours
+(rounded AQHI 7+) the probability of detection and false alarm ratio. Because every forecast
+issue is kept (merged by publication date), accuracy can be measured as forecasts age.
 
 ## Orchestration (Dagster)
 

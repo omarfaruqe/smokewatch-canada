@@ -27,6 +27,7 @@ def client(monkeypatch):
     fake("division_exposure", [{"cduid": "2466"}])
     fake("hotspots_geojson", {"type": "FeatureCollection", "features": []})
     fake("fire_history", [])
+    fake("forecast_skill", [{"lead_bucket": "00-06h", "mae": 0.2}])
     fake("pipeline_health", [{"dataset": "hotspots", "data_through": "2026-06-07T20:00:00Z"}])
     yield TestClient(main.app), calls
     main.app.dependency_overrides.clear()
@@ -87,3 +88,10 @@ def test_cache_headers(client):
     assert data.headers["cache-control"].startswith("public, max-age=")
     assert c.get("/health/pipeline").headers["cache-control"] == "no-store"
     assert "cache-control" not in c.get("/exposure", params={"date": "bad"}).headers
+
+
+def test_forecast_skill_endpoint(client):
+    c, calls = client
+    r = c.get("/aqhi/forecast-skill")
+    assert r.status_code == 200 and r.json()[0]["lead_bucket"] == "00-06h"
+    assert calls["forecast_skill"] == ()

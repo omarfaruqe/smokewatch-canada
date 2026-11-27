@@ -130,3 +130,25 @@ models:
         data_tests: [unique, not_null]
       - name: rows_loaded
         data_tests: [non_negative]
+
+  - name: fct_aqhi_forecast_pairs
+    description: ECCC hourly AQHI forecasts matched with observations for the same location and hour.
+    data_tests:
+      - unique:
+          column_name: "forecast_id"
+    columns:
+      - name: lead_hours
+        data_tests: [not_null]
+      - name: lead_bucket
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["00-06h", "06-12h", "12-24h", "24-48h", "48h+"]
+
+  - name: fct_aqhi_forecast_skill
+    description: AQHI forecast accuracy by lead time (MAE, bias, share within 1, POD, FAR).
+    columns:
+      - name: lead_bucket
+        data_tests: [unique, not_null]
+      - name: mae
+        data_tests: [non_negative]

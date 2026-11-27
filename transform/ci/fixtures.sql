@@ -116,6 +116,9 @@ INSERT INTO raw.eccc_aqhi_forecasts (partition, feature_id, properties, geom) VA
     ('eccc/aqhi-forecasts-realtime/pub_date=2026-06-07', 'AQ_FCST-FAKEA-1',
      '{"aqhi_type": "AQHI-Forecast", "location_id": "FAKEA", "location_name_en": "Montréal", "publication_datetime": "2026-06-07T11:00:00Z", "forecast_datetime": "2026-06-07T20:00:00Z", "aqhi": 8, "forecast_type": "original"}',
      ST_SetSRID(ST_MakePoint(-73.58, 45.51), 4326)),
+    ('eccc/aqhi-forecasts-realtime/pub_date=2026-06-07', 'AQ_FCST-FAKEA-2',
+     '{"aqhi_type": "AQHI-Forecast", "location_id": "FAKEA", "location_name_en": "Montréal", "publication_datetime": "2026-06-07T11:00:00Z", "forecast_datetime": "2026-06-07T16:00:00Z", "aqhi": 9, "forecast_type": "original"}',
+     ST_SetSRID(ST_MakePoint(-73.58, 45.51), 4326)),
     ('eccc/aqhi-forecasts-realtime/pub_date=2026-06-07', 'AQ_FCST-FAKEA-period-1',
      '{"aqhi_type": "AQHI-Forecast-Period", "location_id": "FAKEA", "location_name_en": "Montréal", "publication_datetime": "2026-06-07T11:00:00Z", "forecast_type": "original", "forecast_period": {"period_1": {"forecast_period_en": "Today", "forecast_period_fr": "Aujourd''hui", "aqhi": 8, "aqhi_insmoke": 10}, "period_2": {"forecast_period_en": "Tonight", "forecast_period_fr": "Ce soir et cette nuit", "aqhi": 6, "aqhi_insmoke": null}}}',
      ST_SetSRID(ST_MakePoint(-73.58, 45.51), 4326));

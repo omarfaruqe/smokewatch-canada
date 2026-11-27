@@ -144,6 +144,15 @@ def fire_history(conn: Connection, perimeter_id: str) -> list[dict]:
     """, pid=perimeter_id)
 
 
+def forecast_skill(conn: Connection) -> list[dict]:
+    return _rows(conn, """
+        select lead_bucket, pairs, locations, first_valid_at, last_valid_at, mae, bias,
+               share_within_1, hits, misses, false_alarms, pod, far
+        from marts.fct_aqhi_forecast_skill
+        order by lead_bucket
+    """)
+
+
 def aqhi_hourly(conn: Connection, day: date, cduid: str) -> list[dict]:
     return _rows(conn, """
         select aqhi_source, location_id, location_name_en, location_name_fr, observed_at,

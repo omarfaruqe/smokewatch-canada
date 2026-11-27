@@ -133,6 +133,13 @@ def fire_history(conn: Conn, perimeter_id: str) -> list[dict]:
     return rows
 
 
+@app.get("/aqhi/forecast-skill", tags=["air quality"])
+def forecast_skill(conn: Conn) -> list[dict]:
+    """Accuracy of ECCC hourly AQHI forecasts by lead time: MAE, bias, share within 1 point,
+    probability of detection (pod) and false alarm ratio (far) for high-risk hours."""
+    return queries.forecast_skill(conn)
+
+
 @app.get("/aqhi", tags=["air quality"])
 def aqhi(conn: Conn, date: date, cduid: str) -> list[dict]:
     """Hourly AQHI (ECCC observed and NAPS computed) for a census division on a UTC day."""

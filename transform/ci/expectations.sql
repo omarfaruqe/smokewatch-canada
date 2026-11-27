@@ -54,5 +54,18 @@ BEGIN
     SELECT newest_partition_year INTO n FROM marts.fct_pipeline_health WHERE dataset = 'naps_hourly';
     IF n <> 2026 THEN RAISE EXCEPTION 'pipeline health: NAPS newest year should be 2026, got %', n; END IF;
 
+    -- Forecast skill: 16:00 forecast 9 vs observed 9.2 (amendment) at 5 h lead = hit;
+    -- 20:00 forecast 8 vs observed 4.0 at 9 h lead = false alarm, error +4.
+    SELECT count(*) INTO n FROM marts.fct_aqhi_forecast_pairs;
+    IF n <> 2 THEN RAISE EXCEPTION 'forecast pairs: expected 2, got %', n; END IF;
+    SELECT mae INTO v FROM marts.fct_aqhi_forecast_skill WHERE lead_bucket = '00-06h';
+    IF v <> 0.2 THEN RAISE EXCEPTION 'forecast skill 00-06h: expected MAE 0.2, got %', v; END IF;
+    SELECT pod INTO v FROM marts.fct_aqhi_forecast_skill WHERE lead_bucket = '00-06h';
+    IF v <> 1 THEN RAISE EXCEPTION 'forecast skill 00-06h: expected POD 1, got %', v; END IF;
+    SELECT bias INTO v FROM marts.fct_aqhi_forecast_skill WHERE lead_bucket = '06-12h';
+    IF v <> 4 THEN RAISE EXCEPTION 'forecast skill 06-12h: expected bias +4, got %', v; END IF;
+    SELECT far INTO v FROM marts.fct_aqhi_forecast_skill WHERE lead_bucket = '06-12h';
+    IF v <> 1 THEN RAISE EXCEPTION 'forecast skill 06-12h: expected FAR 1, got %', v; END IF;
+
     RAISE NOTICE 'all fixture expectations met';
 END $$;
