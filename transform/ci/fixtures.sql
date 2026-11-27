@@ -162,7 +162,7 @@ CROSS JOIN LATERAL (SELECT val, val, val, val, val, val, val, val, val, val, val
 
 -- ---- CWFIS season perimeters archive (EPSG:3978) ------------------------------------------
 CREATE TABLE raw.cwfis_season_perimeters AS
-SELECT 2025 AS season_year, 555001::bigint AS uid, 120::bigint AS hcount,
-       '2025/06/02 16:24:00.000'::text AS firstdate, '2025/06/26 17:13:00.000'::text AS lastdate,
+SELECT 2023 AS season_year, 555001::bigint AS uid, 120::bigint AS hcount,
+       '2023/06/02 16:24:00.000'::text AS firstdate, '2023/06/26 17:13:00.000'::text AS lastdate,
        8000.5::double precision AS area, 47303.0::double precision AS consis_id,
        ST_Transform(ST_MakeEnvelope(-73.90, 45.75, -73.85, 45.80, 4326), 3978) AS geom;

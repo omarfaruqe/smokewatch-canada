@@ -14,6 +14,11 @@
   cached a day) and colours them per day from `GET /exposure?date=` as map feature state,
   instead of downloading ~19 MB of shapes for every day of a replay.
 - GeoJSON is passed through from Postgres as text, and responses over 1 KB are gzipped.
+- Census division shapes are built once when the API starts and served pre-compressed from
+  memory, so a visitor's first load no longer waits for Postgres (~14 s on the server).
+  `restore_snapshot.sh` restarts the API so the cache is rebuilt.
+- The 2023 perimeter layer follows the replay: only fires detected by the selected date, bright
+  while still growing and dark once they stopped; hidden outside the 2023 season.
 
 ### Fixed
 - Numeric API values are returned as JSON numbers instead of strings.

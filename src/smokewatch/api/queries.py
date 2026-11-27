@@ -150,6 +150,8 @@ def season_perimeters_geojson(conn: Connection, year: int, province: str | None)
                 'uid', perimeter_uid, 'province', province_code, 'cduid', cduid,
                 'area_ha', round(area_ha), 'hotspots', hotspot_count,
                 'first_detected_at', first_detected_at, 'last_detected_at', last_detected_at,
+                'first_day', to_char(first_detected_at at time zone 'UTC', 'YYYY-MM-DD'),
+                'last_day', to_char(last_detected_at at time zone 'UTC', 'YYYY-MM-DD'),
                 'active_days', active_days
             ) as properties
         from marts.fct_fire_season_perimeters

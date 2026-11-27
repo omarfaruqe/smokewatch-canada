@@ -88,7 +88,7 @@ const T = {
     tagline: "Wildfires, smoke and population exposure across Canada",
     exposed: "whole-division count", exposedDa: "people near a high-risk station", hotspots: "satellite hotspots", peakAqhi: "peak AQHI",
     seasonChart: "Population exposed (millions)", layers: "Layers", legend: "Daily peak AQHI",
-    lyrAqhi: "Census divisions by peak AQHI", lyrHot: "Satellite hotspots", lyrPerim: "2023 final fire perimeters",
+    lyrAqhi: "Census divisions by peak AQHI", lyrHot: "Satellite hotspots", lyrPerim: "2023 fire perimeters to date (bright = still active)",
     noData: "no AQHI station",
     legendNote: "Uncoloured divisions have no AQHI station: no data, not clean air.",
     freshness: "Data through: hotspots {h}, air quality {a}, weather {w}.", pop: "Population (2021)", fires: "Hotspots", hours: "High-risk hours",
@@ -102,7 +102,7 @@ const T = {
     tagline: "Feux de forêt, fumée et exposition de la population au Canada",
     exposed: "décompte par division entière", exposedDa: "personnes près d'une station à risque élevé", hotspots: "points chauds satellitaires", peakAqhi: "CAS maximale",
     seasonChart: "Population exposée (millions)", layers: "Couches", legend: "Cote air santé (CAS) maximale du jour",
-    lyrAqhi: "Divisions de recensement selon la CAS", lyrHot: "Points chauds satellitaires", lyrPerim: "Périmètres finaux des feux 2023",
+    lyrAqhi: "Divisions de recensement selon la CAS", lyrHot: "Points chauds satellitaires", lyrPerim: "Périmètres des feux 2023 à ce jour (vif = encore actif)",
     noData: "aucune station CAS",
     legendNote: "Les divisions non colorées n'ont aucune station CAS : absence de données, pas air pur.",
     freshness: "Données jusqu'au : points chauds {h}, qualité de l'air {a}, météo {w}.", pop: "Population (2021)", fires: "Points chauds", hours: "Heures à risque élevé",
@@ -204,8 +204,9 @@ map.on("load", async () => {
   toggle("lyrAqhi", ["cd-fill"]); toggle("lyrHot", ["hot-pts"]);
   document.getElementById("lyrPerim").addEventListener("change", async e => {
     if (e.target.checked && !perimLoaded) {
-      map.getSource("perim").setData(await getJSON("geo/fires/season/2023"));
+      map.getSource("perim").setData(await getJSON(`geo/fires/season/${PERIM_YEAR}`));
       perimLoaded = true;
+      applyPerimeterFilter(days[idx]);
     }
     map.setLayoutProperty("perim-line", "visibility", e.target.checked ? "visible" : "none");
   });
@@ -253,8 +254,27 @@ function drawChart() {
 }
 
 let pending = 0;
+// Season perimeters follow the replay: only fires first detected by the selected UTC day,
+// bright while still growing (last detection on or after the day), dark once they stopped.
+// Outside that season the layer shows nothing rather than fires from another year.
+const PERIM_YEAR = 2023;
+function applyPerimeterFilter(day) {
+  if (!day || !map.getLayer("perim-line")) return;
+  if (Number(day.slice(0, 4)) !== PERIM_YEAR) {
+    // An expression that is never true. (["==", 1, 0] is read as the legacy filter syntax
+    // ["==", key, value] and rejected, which would leave the previous filter in place.)
+    map.setFilter("perim-line", ["==", ["get", "first_day"], "none"]);
+    return;
+  }
+  map.setFilter("perim-line", ["<=", ["get", "first_day"], day]);
+  const active = [">=", ["get", "last_day"], day];
+  map.setPaintProperty("perim-line", "line-color", ["case", active, "#e8590c", "#7a1f0a"]);
+  map.setPaintProperty("perim-line", "line-width", ["case", active, 1.6, 0.8]);
+}
+
 async function showDay(i, fetchMap = true) {
   idx = i; const day = days[i]; const ticket = ++pending;
+  applyPerimeterFilter(day);
   document.getElementById("slider").value = i;
   document.getElementById("dateLabel").textContent =
     new Date(day + "T12:00:00Z").toLocaleDateString(lang === "fr" ? "fr-CA" : "en-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
