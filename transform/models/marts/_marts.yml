@@ -52,6 +52,31 @@ models:
       - unique:
           column_name: "dauid || '|' || aqhi_source"
 
+  - name: int_first_nation_aqhi_location
+    description: Census division and nearest AQHI location per source for each First Nation.
+    data_tests:
+      - unique:
+          column_name: "band_number::text || '|' || aqhi_source"
+    columns:
+      - name: cduid
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_census_division')
+                field: cduid
+
+  - name: fct_first_nation_daily_exposure
+    description: >
+      First Nation x UTC day air quality at the nearest AQHI location (either source, within
+      the cap). Locations are band office points, so this is an approximate indicator.
+    data_tests:
+      - unique:
+          column_name: "band_number::text || '|' || day::text"
+    columns:
+      - name: high_risk_hours
+        data_tests: [non_negative]
+
   - name: fct_hotspots
     description: Canadian satellite hotspots, one per detection, with census division.
     columns:
@@ -90,6 +115,12 @@ models:
       - name: population_exposed_high_risk
         data_tests: [non_negative]
       - name: population_exposed_high_risk_da
+        data_tests: [non_negative]
+      - name: seniors_exposed_high_risk_da
+        data_tests: [non_negative]
+      - name: children_exposed_high_risk_da
+        data_tests: [non_negative]
+      - name: indigenous_exposed_high_risk_da
         data_tests: [non_negative]
 
   - name: dim_fire_perimeter_history

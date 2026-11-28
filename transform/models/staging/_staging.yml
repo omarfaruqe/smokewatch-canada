@@ -105,6 +105,28 @@ models:
       - name: geom_3347
         data_tests: [not_null]
 
+  - name: stg_statcan__da_profile
+    description: >
+      2021 Census Profile counts per dissemination area: population, 0 to 4 years, 65 years
+      and over (100% data) and Indigenous identity (25% sample, private households).
+    columns:
+      - name: dauid
+        data_tests: [unique, not_null]
+      - name: age_0_4
+        data_tests: [non_negative]
+      - name: age_65_plus
+        data_tests: [non_negative]
+      - name: indigenous_identity
+        data_tests: [non_negative]
+
+  - name: stg_isc__first_nations
+    description: ISC First Nation locations, one point per band (usually the band office).
+    columns:
+      - name: band_number
+        data_tests: [unique, not_null]
+      - name: geom_3347
+        data_tests: [not_null]
+
   - name: stg_statcan__provinces
     columns:
       - name: pruid

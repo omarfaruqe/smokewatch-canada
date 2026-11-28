@@ -27,6 +27,10 @@ sources:
         description: 2021 province/territory cartographic boundaries, EPSG:3347.
       - name: statcan_geo_attributes
         description: Geographic Attribute File 92-151-X, one row per dissemination block (text).
+      - name: statcan_profile_da
+        description: 2021 Census Profile (SDMX DF_DA) counts, one row per DA x characteristic (text).
+      - name: isc_first_nations
+        description: Indigenous Services Canada First Nation locations, one point per band (text).
       - name: statcan_population_cd
         description: Table 98-10-0007-01, population and dwelling counts (all values text).
       - name: _load_log

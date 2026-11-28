@@ -1,16 +1,21 @@
 -- Each dissemination area's nearest AQHI location per source, kept only within
 -- `da_station_max_km` (default 50 km). Areas farther away have no AQHI coverage for that
--- source: unknown air quality, not clean air.
+-- source: unknown air quality, not clean air. Age and Indigenous identity counts come from
+-- the Census Profile; they are zero when the profile is not loaded or a value is suppressed.
 {% set max_m = var('da_station_max_km', 50) * 1000 %}
 
 select
     da.dauid,
     da.cduid,
     da.population_2021,
+    coalesce(p.age_0_4, 0)                     as age_0_4,
+    coalesce(p.age_65_plus, 0)                 as age_65_plus,
+    coalesce(p.indigenous_identity, 0)         as indigenous_identity,
     src.aqhi_source,
     near.location_id,
     round(near.distance_m)                     as distance_m
 from {{ ref('stg_statcan__dissemination_areas') }} da
+left join {{ ref('stg_statcan__da_profile') }} p using (dauid)
 cross join (values ('eccc_observed'), ('naps_computed')) as src(aqhi_source)
 cross join lateral (
     select l.location_id, ST_Distance(l.geom_3347, da.geom_3347) as distance_m

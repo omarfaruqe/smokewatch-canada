@@ -47,6 +47,27 @@ FROM (VALUES
     ('2465', '24650002', -73.65, 45.85, '24650002001', '200')
 ) AS d(cduid, dauid, lon, lat, dbuid, pop);
 
+-- Census Profile counts (SDMX DF_DA rows): ages 0-4 (10), 65+ (24), Indigenous identity
+-- (1389). One suppressed value (empty, flag 6) must stay null and count as zero.
+CREATE TABLE raw.statcan_profile_da (dauid text, characteristic text, obs_value text, flag text);
+INSERT INTO raw.statcan_profile_da VALUES
+    ('24660001', '1', '600', ''), ('24660001', '10', '30', ''),
+    ('24660001', '24', '100', ''), ('24660001', '1389', '20', ''),
+    ('24660002', '1', '400', ''), ('24660002', '10', '20', ''),
+    ('24660002', '24', '80', ''), ('24660002', '1389', '', '6'),
+    ('24650001', '1', '300', ''), ('24650001', '10', '15', ''),
+    ('24650001', '24', '50', ''), ('24650001', '1389', '10', ''),
+    ('24650002', '1', '200', ''), ('24650002', '10', '10', ''),
+    ('24650002', '24', '40', ''), ('24650002', '1389', '5', '');
+
+-- ISC First Nation locations: two near Montreal (in range of the AQHI community), one in
+-- British Columbia with no AQHI location within 50 km.
+CREATE TABLE raw.isc_first_nations (band_number text, band_name text, longitude text, latitude text);
+INSERT INTO raw.isc_first_nations VALUES
+    ('70', 'Mohawks of Kahnawá:ke', '-73.68', '45.41'),
+    ('69', 'Mohawks of Kanesatake', '-74.08', '45.48'),
+    ('604', '?Akisq''nuk First Nation', '-115.96', '50.45');
+
 -- ---- Generic raw feature tables (as created by smokewatch.loaders.bronze_features) -------
 CREATE TABLE raw._load_log (
     dataset text NOT NULL, partition text NOT NULL, sha256 text NOT NULL,

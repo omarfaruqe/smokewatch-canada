@@ -38,6 +38,26 @@ BEGIN
     SELECT sum(population_exposed_high_risk_da) INTO n FROM marts.fct_daily_exposure WHERE day = '2026-06-07';
     IF n <> 1500 THEN RAISE EXCEPTION 'nearest-station exposure: expected 1500, got %', n; END IF;
 
+    -- Who is exposed (all five areas exposed): 65+ 100+80+50+40 = 270, 0-4 30+20+15+10 = 75,
+    -- Indigenous identity 20+0 (suppressed)+10+5 = 35.
+    SELECT sum(seniors_exposed_high_risk_da) INTO n FROM marts.fct_daily_exposure WHERE day = '2026-06-07';
+    IF n <> 270 THEN RAISE EXCEPTION 'seniors exposed: expected 270, got %', n; END IF;
+    SELECT sum(children_exposed_high_risk_da) INTO n FROM marts.fct_daily_exposure WHERE day = '2026-06-07';
+    IF n <> 75 THEN RAISE EXCEPTION 'children exposed: expected 75, got %', n; END IF;
+    SELECT sum(indigenous_exposed_high_risk_da) INTO n FROM marts.fct_daily_exposure WHERE day = '2026-06-07';
+    IF n <> 35 THEN RAISE EXCEPTION 'Indigenous identity exposed: expected 35, got %', n; END IF;
+
+    -- First Nations: Kahnawake and Kanesatake are in range and high risk; the BC band has
+    -- no AQHI location within 50 km, so no row.
+    SELECT count(*) INTO n FROM marts.fct_first_nation_daily_exposure
+    WHERE day = '2026-06-07' AND high_risk;
+    IF n <> 2 THEN RAISE EXCEPTION 'First Nations high risk: expected 2, got %', n; END IF;
+    SELECT count(*) INTO n FROM marts.fct_first_nation_daily_exposure WHERE band_number = 604;
+    IF n <> 0 THEN RAISE EXCEPTION 'First Nations: BC band should have no rows, got %', n; END IF;
+    SELECT count(*) INTO n FROM marts.fct_first_nation_daily_exposure
+    WHERE band_number = 69 AND cduid = '2466';
+    IF n < 1 THEN RAISE EXCEPTION 'First Nations: Kanesatake should map to Montreal (2466)'; END IF;
+
     -- Weather smoke reports (15:00-20:00 UTC) land in Laval.
     SELECT smoke_report_hours INTO n FROM marts.fct_daily_exposure WHERE day = '2026-06-07' AND cduid = '2465';
     IF n <> 6 THEN RAISE EXCEPTION 'smoke reports: expected 6 hours in Laval, got %', n; END IF;
