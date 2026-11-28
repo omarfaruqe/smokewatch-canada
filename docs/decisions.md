@@ -99,3 +99,21 @@ renamed backup table still held the names.
 off-server; cap containers (Postgres 1 CPU / 1 GB, API 0.5 CPU / 512 MB); no parallel
 query or restore workers.
 **Consequences.** Negligible load on the host; data refreshes are a manual export and restore.
+
+## 13. Census Profile through the SDMX web data service
+
+**Context.** Age and Indigenous identity counts by dissemination area are in the 2021 Census
+Profile. Its comprehensive download page is behind a browser (JavaScript) challenge.
+**Decision.** Query StatCan's Census Profile SDMX service for only the four characteristics
+needed (one CSV request, ~28 MB), and never work around the challenge page.
+**Consequences.** A small, reproducible extract with a manifest; adding a characteristic means
+adding its code from the `CL_CHARACTERISTIC` codelist.
+
+## 14. First Nations as points, with stated limits
+
+**Context.** Indigenous Services Canada publishes one point per First Nation, usually the band
+office; reserve boundaries are a separate, much larger dataset.
+**Decision.** Use the points with the same 50 km nearest-station rule as dissemination areas,
+and report counts of communities at high risk rather than a population.
+**Consequences.** Simple and transparent, but approximate where reserves lie far from the band
+office; the dashboard and docs state this, and the incomplete enumeration of some reserves.

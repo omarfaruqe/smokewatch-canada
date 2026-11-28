@@ -17,6 +17,8 @@ chaque jour la population exposée à un air à risque élevé.
 | GeoMet du SMC | Environnement et Changement climatique Canada | Cote air santé (CAS) observée et prévue, météo horaire | Horaire |
 | Archives du SNPA | Environnement et Changement climatique Canada | PM2,5, O3 et NO2 horaires par station (CAS historique calculée) | Annuelle |
 | Recensement de 2021 | Statistique Canada | Limites des divisions de recensement et des provinces, population | Statique |
+| Profil du recensement de 2021 (SDMX) | Statistique Canada | 0 à 4 ans et 65 ans et plus, identité autochtone, par aire de diffusion | Statique |
+| Emplacements des Premières Nations | Services aux Autochtones Canada | Un point par Première Nation (bureau de bande) | Statique |
 
 ## Architecture
 

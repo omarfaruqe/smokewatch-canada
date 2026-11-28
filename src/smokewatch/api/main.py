@@ -143,7 +143,8 @@ def pipeline_health(conn: Conn) -> list[dict]:
 
 @app.get("/exposure/daily", tags=["exposure"])
 def exposure_daily(conn: Conn, start: date, end: date) -> list[dict]:
-    """National totals per UTC day: population exposed to high-risk air, hotspots, peak AQHI."""
+    """National totals per UTC day: population, seniors (65+), young children (0 to 4),
+    Indigenous identity and First Nations exposed to high-risk air; hotspots; peak AQHI."""
     if end < start:
         raise HTTPException(422, "end must be on or after start")
     if (end - start).days > MAX_RANGE_DAYS:

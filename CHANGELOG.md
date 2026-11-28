@@ -3,6 +3,14 @@
 ## Unreleased
 
 ### Added
+- **Who is exposed:** seniors (65+), young children (0 to 4) and people with Indigenous
+  identity exposed to high-risk air, from 2021 Census Profile counts by dissemination area
+  (StatCan SDMX web data service) with the nearest-station rule; and the daily AQHI at the
+  nearest station for each of 637 First Nations (Indigenous Services Canada locations).
+  New models `stg_statcan__da_profile`, `stg_isc__first_nations`, `dim_first_nation`,
+  `int_first_nation_aqhi_location` and `fct_first_nation_daily_exposure`; new columns in
+  `fct_daily_exposure` and `GET /exposure/daily`; `GET /geo/first-nations`; a "Who is
+  exposed" panel and First Nations map layer on the dashboard (EN/FR).
 - **AQHI forecast accuracy:** `fct_aqhi_forecast_pairs` and `fct_aqhi_forecast_skill` (MAE,
   bias, share within 1 point, probability of detection and false alarm ratio by lead time),
   served at `GET /aqhi/forecast-skill`.

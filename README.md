@@ -17,6 +17,8 @@ Canadian provinces and territories, and estimates daily population exposure to p
 | NAPS archive | Environment and Climate Change Canada | Hourly PM2.5, O3, NO2 by station (historical AQHI computed from these) | Yearly |
 | CWFIS perimeter archive | Natural Resources Canada | Final fire perimeters of past seasons | Yearly |
 | Census 2021 | Statistics Canada | Census division and province boundaries, population (table 98-10-0007-01) | Static |
+| Census Profile 2021 (SDMX) | Statistics Canada | Ages 0 to 4 and 65+, Indigenous identity, by dissemination area | Static |
+| First Nation locations | Indigenous Services Canada | One point per First Nation (band office) | Static |
 
 ## Architecture
 
@@ -63,7 +65,7 @@ smokewatch hotspots --start 2023-06-01 --end 2023-06-07 --sink s3   # backfill
 smokewatch aqhi observations --sink s3   # today's hourly AQHI
 smokewatch aqhi forecasts --sink s3      # merge current forecast window
 smokewatch weather --sink s3             # yesterday's hourly weather, all stations
-smokewatch statcan --sink s3             # 2021 Census boundaries + population (once)
+smokewatch statcan --sink s3             # Census boundaries, population, profile, First Nations (once)
 smokewatch perimeters --sink s3          # daily fire perimeter snapshot
 smokewatch load census                   # bronze -> PostGIS raw schema (once)
 smokewatch load features                 # bronze -> raw, only changed partitions
@@ -99,12 +101,13 @@ uvicorn smokewatch.api.main:app --port 8000
 | Endpoint | Returns |
 |---|---|
 | `GET /health` | Status and data coverage |
-| `GET /exposure/daily?start=&end=` | National daily totals: population exposed, hotspots, peak AQHI |
+| `GET /exposure/daily?start=&end=` | National daily totals: population, seniors, young children, Indigenous identity and First Nations exposed; hotspots; peak AQHI |
 | `GET /exposure?date=&province=` | Census divisions for a day, most exposed first |
 | `GET /geo/census-divisions/shapes` | GeoJSON census division boundaries (load once, cached a day) |
 | `GET /geo/census-divisions?date=` | GeoJSON census divisions with the day's metrics |
 | `GET /geo/hotspots?date=&province=&limit=` | GeoJSON hotspots (strongest first) |
 | `GET /geo/fires/season/{year}` | GeoJSON final season perimeters |
+| `GET /geo/first-nations?date=&province=` | GeoJSON First Nations with the day's AQHI at the nearest station |
 | `GET /fires/{id}/history` | SCD2 growth history of a current fire |
 | `GET /aqhi?date=&cduid=` | Hourly AQHI for a census division |
 | `GET /aqhi/forecast-skill` | Accuracy of ECCC AQHI forecasts by lead time |

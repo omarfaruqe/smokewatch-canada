@@ -61,6 +61,15 @@
       <div class="stat"><b id="sAqhi">–</b><small data-i18n="peakAqhi"></small></div>
     </div>
     <div>
+      <h2 data-i18n="whoTitle"></h2>
+      <div class="stats">
+        <div class="stat"><b id="sSeniors">–</b><small data-i18n="seniors"></small></div>
+        <div class="stat"><b id="sChildren">–</b><small data-i18n="children"></small></div>
+        <div class="stat"><b id="sIndigenous">–</b><small data-i18n="indigenous"></small></div>
+        <div class="stat"><b id="sFirstNations">–</b><small data-i18n="firstNations"></small></div>
+      </div>
+    </div>
+    <div>
       <h2 data-i18n="seasonChart"></h2>
       <canvas id="chart" height="150"></canvas>
     </div>
@@ -69,6 +78,7 @@
       <label><input type="checkbox" id="lyrAqhi" checked> <span data-i18n="lyrAqhi"></span></label>
       <label><input type="checkbox" id="lyrHot" checked> <span data-i18n="lyrHot"></span></label>
       <label><input type="checkbox" id="lyrPerim"> <span data-i18n="lyrPerim"></span></label>
+      <label><input type="checkbox" id="lyrFn" checked> <span data-i18n="lyrFn"></span></label>
     </div>
     <div>
       <h2 data-i18n="legend"></h2>
@@ -76,6 +86,7 @@
       <p class="note" style="margin:6px 0 0" data-i18n="legendNote"></p>
     </div>
     <p class="note" data-i18n="method"></p>
+    <p class="note" data-i18n="whoNote"></p>
     <p class="note" id="freshness"></p>
     <p class="note" data-i18n="sources"></p>
   </aside>
@@ -94,9 +105,14 @@ const T = {
     freshness: "Data through: hotspots {h}, air quality {a}, weather {w}.", pop: "Population (2021)", fires: "Hotspots", hours: "High-risk hours",
     pm25: "PM2.5 daily mean (max station)", exposedPop: "Exposed, whole division", exposedDaPop: "Exposed, nearest station",
     lineDa: "Nearest-station estimate", lineCd: "Whole-division count",
+    whoTitle: "Who is exposed (nearest station)", seniors: "seniors, 65 and over", children: "young children, 0 to 4",
+    indigenous: "Indigenous identity", firstNations: "First Nations at high risk (of those with a station)",
+    lyrFn: "First Nations (band office, nearest station's AQHI)", fnNoData: "no AQHI location within 50 km reported",
+    fnNearest: "Nearest AQHI location", seniorsPop: "Seniors 65+ exposed", childrenPop: "Children 0–4 exposed", indigenousPop: "Indigenous identity exposed",
+    whoNote: "Who is exposed uses the nearest-station rule with 2021 Census Profile counts by dissemination area: ages 65 and over and 0 to 4 (100% data) and Indigenous identity (25% sample, private households; small counts are randomly rounded or suppressed). First Nations are located by Indigenous Services Canada's band point, usually the band office, so reserves away from that point may have different air; some reserves were not fully enumerated in the 2021 Census.",
     season2023: "2023 fire season", recent: "Recent days",
     method: "Two estimates of people exposed to high-risk air (rounded AQHI 7+ during a UTC day). Nearest station: each 2021 dissemination area counts when its nearest AQHI location within 50 km is high risk; areas farther away are not covered. Whole-division count: a census division's whole population counts once any of its locations is high risk. Neither figure bounds the other: whole divisions overcount large rural divisions, while nearest-station assignment can cross division borders. 2023 AQHI is computed from NAPS measurements with Health Canada's formula; recent AQHI is ECCC's published value.",
-    sources: "Data: Natural Resources Canada (CWFIS), Environment and Climate Change Canada (AQHI, NAPS, climate), Statistics Canada (2021 Census). Open Government Licence – Canada.",
+    sources: "Data: Natural Resources Canada (CWFIS), Environment and Climate Change Canada (AQHI, NAPS, climate), Statistics Canada (2021 Census), Indigenous Services Canada (First Nation locations). Open Government Licence – Canada.",
   },
   fr: {
     tagline: "Feux de forêt, fumée et exposition de la population au Canada",
@@ -108,9 +124,14 @@ const T = {
     freshness: "Données jusqu'au : points chauds {h}, qualité de l'air {a}, météo {w}.", pop: "Population (2021)", fires: "Points chauds", hours: "Heures à risque élevé",
     pm25: "PM2,5 moyenne quotidienne (station max.)", exposedPop: "Exposée, division entière", exposedDaPop: "Exposée, station la plus proche",
     lineDa: "Estimation par station la plus proche", lineCd: "Décompte par division entière",
+    whoTitle: "Qui est exposé (station la plus proche)", seniors: "aînés, 65 ans et plus", children: "jeunes enfants, 0 à 4 ans",
+    indigenous: "identité autochtone", firstNations: "Premières Nations à risque élevé (parmi celles ayant une station)",
+    lyrFn: "Premières Nations (bureau de bande, CAS de la station la plus proche)", fnNoData: "aucun lieu de mesure de la CAS à moins de 50 km n'a déclaré",
+    fnNearest: "Lieu de mesure de la CAS le plus proche", seniorsPop: "Aînés 65+ exposés", childrenPop: "Enfants 0 à 4 ans exposés", indigenousPop: "Identité autochtone exposée",
+    whoNote: "Qui est exposé applique la règle de la station la plus proche aux chiffres du Profil du recensement de 2021 par aire de diffusion : 65 ans et plus et 0 à 4 ans (données intégrales) et identité autochtone (échantillon de 25 %, ménages privés; les petits nombres sont arrondis au hasard ou supprimés). Les Premières Nations sont situées au point de bande de Services aux Autochtones Canada, généralement le bureau de bande; les réserves éloignées de ce point peuvent avoir un air différent, et certaines réserves n'ont pas été entièrement dénombrées au Recensement de 2021.",
     season2023: "Saison des feux 2023", recent: "Jours récents",
     method: "Deux estimations de la population exposée à un air à risque élevé (CAS arrondie de 7 ou plus pendant un jour UTC). Station la plus proche : chaque aire de diffusion de 2021 est comptée lorsque le lieu de mesure de la CAS le plus proche, à moins de 50 km, est à risque élevé; les aires plus éloignées ne sont pas couvertes. Décompte par division entière : toute la population d'une division est comptée dès qu'un de ses lieux est à risque élevé. Aucune des deux valeurs ne borne l'autre : les divisions entières surestiment les grandes divisions rurales, et l'attribution à la station la plus proche peut franchir les limites des divisions. La CAS de 2023 est calculée à partir des mesures du SNPA selon la formule de Santé Canada; la CAS récente est la valeur publiée par ECCC.",
-    sources: "Données : Ressources naturelles Canada (SCIFV), Environnement et Changement climatique Canada (CAS, SNPA, climat), Statistique Canada (Recensement de 2021). Licence du gouvernement ouvert – Canada.",
+    sources: "Données : Ressources naturelles Canada (SCIFV), Environnement et Changement climatique Canada (CAS, SNPA, climat), Statistique Canada (Recensement de 2021), Services aux Autochtones Canada (emplacements des Premières Nations). Licence du gouvernement ouvert – Canada.",
   },
 };
 // Official AQHI colour scale (1..10, 10+)
@@ -172,6 +193,7 @@ map.on("load", async () => {
   map.addSource("cd", { type: "geojson", data: empty, promoteId: "cduid" });
   map.addSource("hot", { type: "geojson", data: empty });
   map.addSource("perim", { type: "geojson", data: empty });
+  map.addSource("fn", { type: "geojson", data: empty });
   const aqhiColor = ["case", ["==", ["feature-state", "max_aqhi"], null], "rgba(0,0,0,0)",
     ["step", ["round", ["feature-state", "max_aqhi"]], AQHI_COLORS[0], 2, AQHI_COLORS[1], 3, AQHI_COLORS[2], 4, AQHI_COLORS[3],
       5, AQHI_COLORS[4], 6, AQHI_COLORS[5], 7, AQHI_COLORS[6], 8, AQHI_COLORS[7], 9, AQHI_COLORS[8], 10, AQHI_COLORS[9], 11, AQHI_COLORS[10]]];
@@ -182,6 +204,14 @@ map.on("load", async () => {
   map.addLayer({ id: "hot-pts", type: "circle", source: "hot", paint: {
     "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 1.2, 8, 3.5],
     "circle-color": "#e8590c", "circle-opacity": 0.75 } });
+  // First Nations: filled with the nearest station's AQHI colour, hollow when none reported.
+  const fnAqhi = ["to-number", ["get", "max_aqhi"], 0];
+  map.addLayer({ id: "fn-pts", type: "circle", source: "fn", paint: {
+    "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 3, 8, 6],
+    "circle-color": ["case", ["==", ["get", "max_aqhi"], null], "#ffffff",
+      ["step", ["round", fnAqhi], AQHI_COLORS[0], 2, AQHI_COLORS[1], 3, AQHI_COLORS[2], 4, AQHI_COLORS[3],
+        5, AQHI_COLORS[4], 6, AQHI_COLORS[5], 7, AQHI_COLORS[6], 8, AQHI_COLORS[7], 9, AQHI_COLORS[8], 10, AQHI_COLORS[9], 11, AQHI_COLORS[10]]],
+    "circle-stroke-color": "#3b2a6b", "circle-stroke-width": 1.2 } });
 
   map.on("click", "cd-fill", e => {
     const p = e.features[0].properties;             // static: name, province, population
@@ -194,14 +224,27 @@ map.on("load", async () => {
       `<br>${t("pm25")}: ${pm != null ? fmt(pm, 1) + " µg/m³" : "–"}` +
       `<br>${t("fires")}: ${fmt(d.hotspot_count ?? 0)}<br>${t("pop")}: ${fmt(p.population)}` +
       `<br>${t("exposedDaPop")}: ${fmt(d.population_exposed_high_risk_da ?? 0)}` +
-      `<br>${t("exposedPop")}: ${fmt(d.population_exposed_high_risk ?? 0)}`).addTo(map);
+      `<br>${t("exposedPop")}: ${fmt(d.population_exposed_high_risk ?? 0)}` +
+      `<br>${t("seniorsPop")}: ${fmt(d.seniors_exposed_high_risk_da ?? 0)}` +
+      `<br>${t("childrenPop")}: ${fmt(d.children_exposed_high_risk_da ?? 0)}` +
+      `<br>${t("indigenousPop")}: ${fmt(d.indigenous_exposed_high_risk_da ?? 0)}`).addTo(map);
   });
+  map.on("click", "fn-pts", e => {
+    const p = e.features[0].properties;
+    const body = p.max_aqhi == null ? `<i>${t("fnNoData")}</i>` :
+      `${t("peakAqhi")}: ${fmt(p.max_aqhi, 1)}<br>${t("hours")}: ${fmt(p.high_risk_hours)}` +
+      `<br>${t("fnNearest")}: ${fmt(p.nearest_km, 1)} km`;
+    new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<b>${p.name}</b> (${p.province})<br>${body}`).addTo(map);
+  });
+  map.on("mouseenter", "fn-pts", () => map.getCanvas().style.cursor = "pointer");
+  map.on("mouseleave", "fn-pts", () => map.getCanvas().style.cursor = "");
   map.on("mouseenter", "cd-fill", () => map.getCanvas().style.cursor = "pointer");
   map.on("mouseleave", "cd-fill", () => map.getCanvas().style.cursor = "");
 
   const toggle = (box, layers) => document.getElementById(box).addEventListener("change", e =>
     layers.forEach(l => map.setLayoutProperty(l, "visibility", e.target.checked ? "visible" : "none")));
-  toggle("lyrAqhi", ["cd-fill"]); toggle("lyrHot", ["hot-pts"]);
+  toggle("lyrAqhi", ["cd-fill"]); toggle("lyrHot", ["hot-pts"]); toggle("lyrFn", ["fn-pts"]);
+  document.getElementById("lyrFn").addEventListener("change", e => { if (e.target.checked) showDay(idx); });
   document.getElementById("lyrPerim").addEventListener("change", async e => {
     if (e.target.checked && !perimLoaded) {
       map.getSource("perim").setData(await getJSON(`geo/fires/season/${PERIM_YEAR}`));
@@ -284,15 +327,24 @@ async function showDay(i, fetchMap = true) {
   document.getElementById("sExposed").textContent = millions(s.population_exposed_high_risk);
   document.getElementById("sHotspots").textContent = fmt(s.hotspots ?? 0);
   document.getElementById("sAqhi").textContent = fmt(s.peak_aqhi, 1);
+  const people = v => (v ?? 0) >= 1e6 ? fmt(v / 1e6, 2) + " M" : fmt(v ?? 0);
+  document.getElementById("sSeniors").textContent = people(s.seniors_exposed_high_risk_da);
+  document.getElementById("sChildren").textContent = people(s.children_exposed_high_risk_da);
+  document.getElementById("sIndigenous").textContent = people(s.indigenous_exposed_high_risk_da);
+  document.getElementById("sFirstNations").textContent =
+    `${fmt(s.first_nations_high_risk ?? 0)} / ${fmt(s.first_nations_reporting ?? 0)}`;
   if (chart) chart.draw();
   if (!fetchMap) return;
-  const [rows, hot] = await Promise.all([
-    getJSON(`exposure?date=${day}`), getJSON(`geo/hotspots?date=${day}&limit=20000`)]);
+  const fnOn = document.getElementById("lyrFn").checked;
+  const [rows, hot, fn] = await Promise.all([
+    getJSON(`exposure?date=${day}`), getJSON(`geo/hotspots?date=${day}&limit=20000`),
+    fnOn ? getJSON(`geo/first-nations?date=${day}`) : null]);
   if (ticket !== pending) return;  // a newer day was requested meanwhile
   dayRows = Object.fromEntries(rows.map(r => [r.cduid, r]));
   map.removeFeatureState({ source: "cd" });
   for (const r of rows) map.setFeatureState({ source: "cd", id: r.cduid }, { max_aqhi: r.max_aqhi });
   map.getSource("hot").setData(hot);
+  if (fn) map.getSource("fn").setData(fn);
 }
 
 function stop() { clearInterval(timer); timer = null; document.getElementById("play").textContent = "▶"; }
