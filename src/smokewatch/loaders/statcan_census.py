@@ -5,10 +5,13 @@ Tables (replaced on every run, so loads are idempotent):
     raw.statcan_provinces          13 polygons, EPSG:3347
     raw.statcan_population_cd      table 98-10-0007-01 (Canada, PR and CD rows)
     raw.statcan_geo_attributes     92-151-X dissemination blocks (population, DA points)
+    raw.statcan_profile_da         Census Profile counts, one row per DA x characteristic
+    raw.isc_first_nations          ISC First Nation locations (band office points)
 """
 
 from __future__ import annotations
 
+import csv
 import io
 import logging
 import re
@@ -21,7 +24,7 @@ import pandas as pd
 from sqlalchemy import Engine, text
 
 from smokewatch.db import bootstrap, get_engine
-from smokewatch.extractors.statcan import FILES
+from smokewatch.extractors.statcan import FILES, PROFILE_CHARACTERISTICS
 from smokewatch.storage import BronzeStore
 
 log = logging.getLogger(__name__)
@@ -115,12 +118,65 @@ def _load_geo_attributes(store: BronzeStore, engine: Engine) -> int:
     return len(df)
 
 
+def _copy_text_table(engine: Engine, table: str, cols: list[str], rows) -> int:
+    n = 0
+    with engine.begin() as conn:
+        conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+        conn.execute(text(f"CREATE TABLE {table} ({', '.join(c + ' text' for c in cols)})"))
+        cur = conn.connection.driver_connection.cursor()
+        with cur, cur.copy(f"COPY {table} ({', '.join(cols)}) FROM STDIN") as cp:
+            for row in rows:
+                cp.write_row(row)
+                n += 1
+    return n
+
+
+def read_profile_csv(data: bytes):
+    """Yield (dauid, characteristic, obs_value, flag) from the SDMX CSV.
+
+    REF_AREA is the DGUID (2021S0512 + DAUID); ALT_GEO_CODE is the plain DAUID. Suppressed
+    values come with an empty OBS_VALUE and a FLAG code, both kept as given.
+    """
+    reader = csv.DictReader(io.StringIO(data.decode("utf-8-sig")))
+    for r in reader:
+        if r["CHARACTERISTIC"] not in PROFILE_CHARACTERISTICS or r["GENDER"] != "1":
+            continue
+        dauid = r["ALT_GEO_CODE"] or r["REF_AREA"].removeprefix("2021S0512")
+        yield dauid, r["CHARACTERISTIC"], r["OBS_VALUE"], r["FLAG"]
+
+
+def read_first_nations(data: bytes):
+    """Yield (band_number, band_name, longitude, latitude) from the ISC zip."""
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        name = next(n for n in z.namelist() if n.lower().endswith(".csv"))
+        raw = z.read(name)
+    for r in csv.DictReader(io.StringIO(raw.decode("utf-8-sig"))):
+        yield r["BAND_NUMBER"], r["BAND_NAME"], r["LONGITUDE"], r["LATITUDE"]
+
+
+def _load_optional(store: BronzeStore, engine: Engine, name: str, table: str,
+                   cols: list[str], reader) -> int:
+    key = FILES[name][1]
+    if not store.exists(key):
+        log.info("%s not in bronze; skipping (run `smokewatch statcan --only %s`)", name, name)
+        return 0
+    n = _copy_text_table(engine, table, cols, reader(store.get(key)))
+    log.info("loaded %d rows into %s", n, table)
+    return n
+
+
 def load(store: BronzeStore, engine: Engine | None = None) -> dict[str, int]:
     engine = engine or get_engine()
     bootstrap(engine)
     counts = {name: _load_boundary(store, engine, name) for name in BOUNDARIES}
     counts["population_cd"] = _load_population(store, engine)
     counts["geo_attributes"] = _load_geo_attributes(store, engine)
+    counts["profile_da"] = _load_optional(
+        store, engine, "profile_da", "raw.statcan_profile_da",
+        ["dauid", "characteristic", "obs_value", "flag"], read_profile_csv)
+    counts["first_nations"] = _load_optional(
+        store, engine, "first_nations", "raw.isc_first_nations",
+        ["band_number", "band_name", "longitude", "latitude"], read_first_nations)
     with engine.begin() as conn:
         conn.execute(text("ANALYZE raw.statcan_census_divisions"))
         conn.execute(text("ANALYZE raw.statcan_provinces"))

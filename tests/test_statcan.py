@@ -59,3 +59,23 @@ def test_fetch_rejects_html_instead_of_zip(tmp_path):
     with pytest.raises(RuntimeError, match="did not return a zip"):
         statcan.fetch(store, ["geo_attributes"], session=FakeSession(b"<!DOCTYPE html>"))
     assert not store.exists("statcan/census2021/attributes/2021_92-151_X_manifest.json")
+
+
+def test_fetch_rejects_html_instead_of_sdmx_csv(tmp_path):
+    import pytest
+
+    store = LocalStore(tmp_path)
+    with pytest.raises(RuntimeError, match="did not return SDMX CSV"):
+        statcan.fetch(store, ["profile_da"], session=FakeSession(b"<!DOCTYPE html>"))
+
+
+def test_profile_query_asks_for_all_characteristics():
+    url = statcan.FILES["profile_da"][0]
+    assert "/data/STC_CP,DF_DA/A5..1.1+10+24+1389.1?format=csv" in url
+
+
+def test_first_nations_manifest_names_isc(tmp_path):
+    store = LocalStore(tmp_path)
+    statcan.fetch(store, ["first_nations"], session=FakeSession())
+    m = json.loads(store.get("isc/first_nations/Premiere_Nation_First_Nation_CSV_manifest.json"))
+    assert m["source"] == "Indigenous Services Canada"

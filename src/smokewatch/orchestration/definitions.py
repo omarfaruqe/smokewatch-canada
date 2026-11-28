@@ -156,14 +156,16 @@ def raw_features(context: AssetExecutionContext):
 @multi_asset(
     specs=[
         AssetSpec(["raw", t], deps=[bronze_statcan], group_name="raw", kinds={"postgres"})
-        for t in ("statcan_census_divisions", "statcan_provinces", "statcan_population_cd")
+        for t in ("statcan_census_divisions", "statcan_provinces", "statcan_population_cd",
+                  "statcan_geo_attributes", "statcan_profile_da", "isc_first_nations")
     ],
 )
 def raw_census():
-    """Load census boundaries and population into raw (tables replaced on each run)."""
+    """Load census reference data and First Nation locations into raw (replaced each run)."""
     counts = statcan_census.load(_store())
     names = {"census_divisions": "statcan_census_divisions", "provinces": "statcan_provinces",
-             "population_cd": "statcan_population_cd"}
+             "population_cd": "statcan_population_cd", "geo_attributes": "statcan_geo_attributes",
+             "profile_da": "statcan_profile_da", "first_nations": "isc_first_nations"}
     for name, table in names.items():
         yield MaterializeResult(asset_key=AssetKey(["raw", table]), metadata={"rows": counts[name]})
 

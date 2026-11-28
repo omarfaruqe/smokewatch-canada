@@ -45,7 +45,8 @@ def main(argv: list[str] | None = None) -> None:
     na.add_argument("--pollutants", nargs="+", default=list(naps.DEFAULT_POLLUTANTS))
     na.add_argument("--sink", choices=["local", "s3"], default="s3")
     na.add_argument("--force", action="store_true", help="re-download even if unchanged")
-    sc = sub.add_parser("statcan", help="StatCan 2021 Census boundaries and population -> bronze")
+    sc = sub.add_parser(
+        "statcan", help="Census reference files and First Nation locations -> bronze")
     sc.add_argument("--sink", choices=["local", "s3"], default="s3")
     sc.add_argument("--only", nargs="+", choices=list(statcan.FILES), help="subset of files")
     sc.add_argument("--force", action="store_true", help="re-download files already in bronze")

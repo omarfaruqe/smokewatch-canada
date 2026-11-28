@@ -5,6 +5,11 @@ a manifest; re-runs skip files already present unless forced.
 
     statcan/census2021/boundaries/<name>.zip   cartographic boundary files (Shapefile)
     statcan/census2021/tables/<pid>-eng.zip    data tables (CSV)
+    statcan/census2021/profile/da_age_indigenous.csv   Census Profile, dissemination areas
+    isc/first_nations/Premiere_Nation_First_Nation_CSV.zip   ISC First Nation locations
+
+The Census Profile comes from StatCan's SDMX web data service (the comprehensive download
+page sits behind a browser challenge, which we do not try to get around).
 """
 
 from __future__ import annotations
@@ -31,6 +36,20 @@ ATTRIBUTE_BASE = (
     "files-fichiers"
 )
 
+PROFILE_SDMX = "https://api.statcan.gc.ca/census-recensement/profile/sdmx/rest"
+
+# Census Profile characteristic codes (codelist CL_CHARACTERISTIC of dataflow DF_DA).
+PROFILE_CHARACTERISTICS = {
+    "1": "population_2021",
+    "10": "age_0_4",
+    "24": "age_65_plus",
+    "1389": "indigenous_identity",
+}
+ISC_FIRST_NATIONS = (
+    "https://data.sac-isc.gc.ca/geomatics/rest/directories/arcgisoutput/"
+    "DonneesOuvertes_OpenData/Premiere_Nation_First_Nation/Premiere_Nation_First_Nation_CSV.zip"
+)
+
 # name -> (url, bronze key, description)
 FILES: dict[str, tuple[str, str, str]] = {
     "census_divisions": (
@@ -54,6 +73,23 @@ FILES: dict[str, tuple[str, str, str]] = {
         "statcan/census2021/tables/98100007-eng.zip",
         "Table 98-10-0007-01 Population and dwelling counts: Canada and census divisions",
     ),
+    "profile_da": (
+        f"{PROFILE_SDMX}/data/STC_CP,DF_DA/A5..1.{'+'.join(PROFILE_CHARACTERISTICS)}.1"
+        "?format=csv",
+        "statcan/census2021/profile/da_age_indigenous.csv",
+        "2021 Census Profile (SDMX DF_DA), dissemination areas, total gender, counts: "
+        "population, 0 to 4 years, 65 years and over, Indigenous identity (25% sample)",
+    ),
+    "first_nations": (
+        ISC_FIRST_NATIONS,
+        "isc/first_nations/Premiere_Nation_First_Nation_CSV.zip",
+        "Indigenous Services Canada, First Nation locations (band office points, NAD83 CSRS)",
+    ),
+}
+
+# Publisher and licence where they differ from Statistics Canada.
+PUBLISHERS = {
+    "first_nations": ("Indigenous Services Canada", "Open Government Licence - Canada"),
 }
 
 
@@ -69,7 +105,7 @@ class DownloadResult:
 def _download(session: requests.Session, url: str) -> bytes:
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            with session.get(url, stream=True, timeout=300) as resp:
+            with session.get(url, stream=True, timeout=600) as resp:
                 resp.raise_for_status()
                 return b"".join(resp.iter_content(chunk_size=1 << 20))
         except requests.RequestException as exc:
@@ -77,6 +113,14 @@ def _download(session: requests.Session, url: str) -> bytes:
                 raise
             log.warning("download failed (%s), retry %d", exc, attempt)
     raise RuntimeError("unreachable")
+
+
+def check_payload(key: str, url: str, data: bytes) -> None:
+    """Reject HTML error or challenge pages saved in place of the real file."""
+    if key.endswith(".zip") and data[:2] != b"PK":
+        raise RuntimeError(f"{url} did not return a zip archive (got {data[:60]!r})")
+    if key.endswith(".csv") and not data.removeprefix(b"\xef\xbb\xbf").startswith(b"DATAFLOW,"):
+        raise RuntimeError(f"{url} did not return SDMX CSV (got {data[:60]!r})")
 
 
 def fetch(
@@ -95,15 +139,17 @@ def fetch(
             results.append(DownloadResult(name, key, 0, "", True))
             continue
         data = _download(session, url)
-        if key.endswith(".zip") and data[:2] != b"PK":
-            raise RuntimeError(f"{url} did not return a zip archive (got {data[:60]!r})")
+        check_payload(key, url, data)
         digest = hashlib.sha256(data).hexdigest()
-        store.put(key, data, content_type="application/zip")
+        content_type = "text/csv" if key.endswith(".csv") else "application/zip"
+        store.put(key, data, content_type=content_type)
+        publisher, licence = PUBLISHERS.get(
+            name, ("Statistics Canada", "Statistics Canada Open Licence"))
         put_json(store, manifest_key, {
-            "source": "Statistics Canada", "url": url, "description": desc,
+            "source": publisher, "url": url, "description": desc,
             "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "bytes": len(data), "sha256": digest,
-            "licence": "Statistics Canada Open Licence",
+            "licence": licence,
         })
         log.info("wrote %s (%.1f MB) to %s", name, len(data) / 1e6, key)
         results.append(DownloadResult(name, key, len(data), digest, False))
