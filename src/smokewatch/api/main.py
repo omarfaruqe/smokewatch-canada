@@ -189,6 +189,13 @@ def hotspots_geojson(
     return geojson(queries.hotspots_geojson(conn, date, province, limit))
 
 
+@app.get("/geo/first-nations", tags=["map"], response_class=Response)
+def first_nations_geojson(conn: Conn, date: date, province: Province | None = None) -> Response:
+    """First Nation locations (ISC band office points) with that day's AQHI at the nearest
+    AQHI location within 50 km; null where none reported."""
+    return geojson(queries.first_nations_geojson(conn, date, province))
+
+
 @app.get("/geo/fires/season/{year}", tags=["map"], response_class=Response)
 def season_perimeters(conn: Conn, year: int, province: Province | None = None) -> Response:
     """Final fire perimeters of an archived season (e.g. 2023) as GeoJSON."""

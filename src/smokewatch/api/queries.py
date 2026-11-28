@@ -60,20 +60,35 @@ def pipeline_health(conn: Connection) -> list[dict]:
 
 def national_daily(conn: Connection, start: date, end: date) -> list[dict]:
     return _rows(conn, """
+        with fn as (
+            select
+                day,
+                count(*) filter (where high_risk)  as first_nations_high_risk,
+                count(*)                           as first_nations_reporting
+            from marts.fct_first_nation_daily_exposure
+            where day between :start and :end
+            group by day
+        )
         select
-            day,
+            e.day,
             sum(population_exposed_high_risk)::bigint as population_exposed_high_risk,
             sum(population_exposed_high_risk_da)::bigint as population_exposed_high_risk_da,
             sum(population_aqhi_covered_da)::bigint as population_aqhi_covered_da,
+            sum(seniors_exposed_high_risk_da)::bigint as seniors_exposed_high_risk_da,
+            sum(children_exposed_high_risk_da)::bigint as children_exposed_high_risk_da,
+            sum(indigenous_exposed_high_risk_da)::bigint as indigenous_exposed_high_risk_da,
+            coalesce(max(fn.first_nations_high_risk), 0) as first_nations_high_risk,
+            coalesce(max(fn.first_nations_reporting), 0) as first_nations_reporting,
             sum(hotspot_count)::bigint                                  as hotspots,
             max(max_aqhi)                                               as peak_aqhi,
             count(*) filter (where population_exposed_high_risk > 0)    as divisions_exposed,
             coalesce(array_agg(distinct province_code order by province_code)
                 filter (where population_exposed_high_risk > 0), '{}')  as provinces_exposed
-        from marts.fct_daily_exposure
-        where day between :start and :end
-        group by day
-        order by day
+        from marts.fct_daily_exposure e
+        left join fn on fn.day = e.day
+        where e.day between :start and :end
+        group by e.day
+        order by e.day
     """, start=start, end=end)
 
 
@@ -84,7 +99,9 @@ def division_exposure(conn: Connection, day: date, province: str | None) -> list
             e.population_2021, e.hotspot_count, e.total_frp_mw, e.aqhi_coverage, e.max_aqhi,
             e.mean_aqhi, e.high_risk_hours, e.pm25_max_station_daily_mean, e.pm25_over_standard,
             e.smoke_report_hours, e.population_exposed_high_risk,
-            e.population_exposed_high_risk_da, e.population_aqhi_covered_da
+            e.population_exposed_high_risk_da, e.population_aqhi_covered_da,
+            e.seniors_exposed_high_risk_da, e.children_exposed_high_risk_da,
+            e.indigenous_exposed_high_risk_da
         from marts.fct_daily_exposure e
         join marts.dim_census_division d using (cduid)
         where e.day = :day and (cast(:province as text) is null or e.province_code = :province)
@@ -119,7 +136,10 @@ def division_geojson(conn: Connection, day: date) -> str:
                 'pm25', e.pm25_max_station_daily_mean,
                 'exposed', coalesce(e.population_exposed_high_risk, 0),
                 'exposed_da', coalesce(e.population_exposed_high_risk_da, 0),
-                'covered_da', coalesce(e.population_aqhi_covered_da, 0)
+                'covered_da', coalesce(e.population_aqhi_covered_da, 0),
+                'seniors_da', coalesce(e.seniors_exposed_high_risk_da, 0),
+                'children_da', coalesce(e.children_exposed_high_risk_da, 0),
+                'indigenous_da', coalesce(e.indigenous_exposed_high_risk_da, 0)
             ) as properties
         from marts.dim_census_division d
         left join marts.fct_daily_exposure e on e.cduid = d.cduid and e.day = :day
@@ -158,6 +178,27 @@ def season_perimeters_geojson(conn: Connection, year: int, province: str | None)
         where season_year = :year
           and (cast(:province as text) is null or province_code = :province)
     """, year=year, province=province)
+
+
+def first_nations_geojson(conn: Connection, day: date, province: str | None) -> str:
+    """Every First Nation location with that day's air quality at its nearest AQHI location.
+
+    max_aqhi and high_risk are null when no AQHI location within the cap reported that day.
+    """
+    return _feature_collection(conn, """
+        select
+            ST_AsGeoJSON(f.geom_4326, 5) as geometry,
+            json_build_object(
+                'band_number', f.band_number, 'name', f.band_name, 'cduid', f.cduid,
+                'province', f.province_code, 'max_aqhi', e.max_aqhi,
+                'high_risk_hours', e.high_risk_hours, 'high_risk', e.high_risk,
+                'nearest_km', round((e.nearest_distance_m / 1000.0)::numeric, 1)
+            ) as properties
+        from marts.dim_first_nation f
+        left join marts.fct_first_nation_daily_exposure e
+            on e.band_number = f.band_number and e.day = :day
+        where cast(:province as text) is null or f.province_code = :province
+    """, day=day, province=province)
 
 
 def fire_history(conn: Connection, perimeter_id: str) -> list[dict]:

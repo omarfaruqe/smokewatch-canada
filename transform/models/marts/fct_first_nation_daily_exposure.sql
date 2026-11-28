@@ -37,7 +37,7 @@ select
     ld.day,
     max(fl.band_name)                          as band_name,
     max(fl.cduid)                              as cduid,
-    max(cd.province_code)                      as province_code,
+    max(fl.province_code)                      as province_code,
     max(ld.max_aqhi)                           as max_aqhi,
     max(ld.high_risk_hours)                    as high_risk_hours,
     max(ld.high_risk_hours) > 0                as high_risk,
@@ -45,5 +45,4 @@ select
 from {{ ref('int_first_nation_aqhi_location') }} fl
 join loc_day ld
     on ld.aqhi_source = fl.aqhi_source and ld.location_id = fl.location_id
-join {{ ref('dim_census_division') }} cd on cd.cduid = fl.cduid
 group by fl.band_number, ld.day

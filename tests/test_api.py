@@ -42,6 +42,7 @@ def client(monkeypatch):
     fake("division_exposure", [{"cduid": "2466"}])
     fake("hotspots_geojson", '{"type": "FeatureCollection", "features": []}')
     fake("division_shapes_geojson", '{"type": "FeatureCollection", "features": []}')
+    fake("first_nations_geojson", '{"type": "FeatureCollection", "features": []}')
     fake("fire_history", [])
     fake("forecast_skill", [{"lead_bucket": "00-06h", "mae": 0.2}])
     fake("pipeline_health", [{"dataset": "hotspots", "data_through": "2026-06-07T20:00:00Z"}])
@@ -151,3 +152,12 @@ def test_shapes_are_built_once_and_served_gzipped(client, monkeypatch):
     plain = c.get("/geo/census-divisions/shapes", headers={"Accept-Encoding": "identity"})
     assert "content-encoding" not in plain.headers and len(plain.json()["features"]) == 500
     assert len(builds) == 1
+
+
+def test_first_nations_endpoint_passes_date_and_province(client):
+    c, calls = client
+    r = c.get("/geo/first-nations", params={"date": "2023-06-07", "province": "QC"})
+    assert r.status_code == 200 and r.headers["content-type"].startswith("application/geo+json")
+    assert calls["first_nations_geojson"] == (date(2023, 6, 7), "QC")
+    assert c.get("/geo/first-nations", params={"date": "2023-06-07", "province": "XX"}
+                 ).status_code == 422

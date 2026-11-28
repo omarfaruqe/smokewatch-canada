@@ -53,11 +53,18 @@ models:
           column_name: "dauid || '|' || aqhi_source"
 
   - name: int_first_nation_aqhi_location
-    description: Census division and nearest AQHI location per source for each First Nation.
+    description: Nearest AQHI location per source for each First Nation, within the cap.
     data_tests:
       - unique:
           column_name: "band_number::text || '|' || aqhi_source"
+
+  - name: dim_first_nation
+    description: >
+      First Nations from ISC (one point per band, usually the band office) with their census
+      division.
     columns:
+      - name: band_number
+        data_tests: [unique, not_null]
       - name: cduid
         data_tests:
           - not_null
